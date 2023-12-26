@@ -287,44 +287,9 @@ module.exports = {
       try {
          const { email, password } = req.body;
          const user = await User.findOne({ email });
-         if (user) {
-            const checkPassword = await bcrypt.compare(password, user.password);
 
-            if (checkPassword) {
-               const token = jwt.sign(
-                  {
-                     data: {
-                        id: user._id,
-                        email: user.email,
-                        name: user.name,
-                        phoneNumber: user.phoneNumber,
-                        avatar: user.avatar,
-                     },
-                  },
-                  jwtKey,
-                  { expiresIn: "24h" }
-               );
-
-               res.status(200).send({
-                  status: 200,
-                  payload: token,
-                  message: `Welcome, ${user.name}!`,
-                  errorDetail: null,
-               });
-            } else {
-               res.status(401).send({
-                  status: 401,
-                  payload: null,
-                  message: "Incorrect password",
-                  errorDetail: {
-                     password: {
-                        message: "Password is incorrect",
-                     },
-                  },
-               });
-            }
-         } else if (!user) {
-            res.status(401).send({
+         if (!user)
+            return res.status(401).send({
                status: 401,
                payload: null,
                message: "Account doesn't exist",
@@ -334,7 +299,35 @@ module.exports = {
                   },
                },
             });
-         }
+
+         const checkPassword = await bcrypt.compare(password, user.password);
+
+         if (!checkPassword)
+            return res.status(401).send({
+               status: 401,
+               payload: null,
+               message: "Incorrect password",
+               errorDetail: {
+                  password: {
+                     message: "Password is incorrect",
+                  },
+               },
+            });
+
+         const token = jwt.sign(
+            {
+               id: user._id,
+            },
+            jwtKey,
+            { expiresIn: "24h" }
+         );
+
+         return res.status(200).send({
+            status: 200,
+            payload: token,
+            message: `Welcome, ${user.name}!`,
+            errorDetail: null,
+         });
       } catch (error) {
          res.status(500).send({
             status: 500,
