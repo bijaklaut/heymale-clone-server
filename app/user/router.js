@@ -19,7 +19,7 @@ router.post(
    multerMiddleware(upload.single("avatar")),
    createUser
 );
-router.get("/detail/:id", userDetail);
+router.get("/:id", isLogin, userDetail);
 router.put(
    "/update/:id",
    isLogin,
