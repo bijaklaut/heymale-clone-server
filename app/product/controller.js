@@ -5,7 +5,57 @@ const { rootPath } = require("../../config");
 module.exports = {
    getProducts: async (req, res) => {
       try {
-         const products = await Product.find().populate("category", "name");
+         /* const products = await Product.find().populate("category", "name");
+         let activeProducts = [];
+         let inactiveProducts = [];
+
+         products.map((product) => {
+            if (product.status == "Active") return activeProducts.push(product);
+
+            return inactiveProducts.push(product);
+         }); */
+         const { query = "", search = "" } = req.body;
+         let criteria = {};
+         if (query)
+            criteria = {
+               "category.name": { $regex: `${query}`, $options: "i" },
+            };
+
+         if (search)
+            criteria = {
+               ...criteria,
+               name: { $regex: `${search}`, $options: "i" },
+            };
+
+         // Grouping via mongoose aggregate
+         const products = await Product.aggregate([
+            {
+               $lookup: {
+                  from: "categories",
+                  localField: "category",
+                  foreignField: "_id",
+                  as: "category",
+                  // pipeline: [{ $project: {  name: 1 } }],
+               },
+            },
+            {
+               $unwind: "$category",
+            },
+            {
+               $match: criteria,
+            },
+            {
+               $sort: { "category.name": 1, name: 1 },
+            },
+            // {
+            //    $group: {
+            //       _id: "$status",
+            //       items: {
+            //          $push: "$$ROOT",
+            //       },
+            //    },
+            // },
+         ]);
 
          res.status(200).send({
             status: 200,
@@ -114,7 +164,8 @@ module.exports = {
    },
    updateProduct: async (req, res) => {
       try {
-         const { name, category, variant, price, description } = req.body;
+         const { name, category, variant, price, description, status } =
+            req.body;
          const { id } = req.params;
          const oldProduct = await Product.findById(id);
          let { thumbnail } = oldProduct;
@@ -125,7 +176,7 @@ module.exports = {
 
          Product.findByIdAndUpdate(
             id,
-            { name, category, variant, price, description, thumbnail },
+            { name, category, variant, price, description, thumbnail, status },
             { new: true, runValidators: true }
          ).then((result) => {
             if (

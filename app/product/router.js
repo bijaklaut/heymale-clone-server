@@ -9,7 +9,8 @@ const {
    deleteProduct,
 } = require("./controller");
 
-router.get("/", getProducts);
+// router.get("/", getProducts);
+router.post("/", getProducts);
 router.post(
    "/create",
    multerMiddleware(upload.single("thumbnail")),

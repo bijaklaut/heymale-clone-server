@@ -2,23 +2,21 @@ const Category = require("./model");
 
 module.exports = {
    getCategories: async (req, res) => {
-      await Category.find()
-         .then((result) => {
-            res.status(200).send({
-               status: 200,
-               errorDetail: null,
-               payload: result,
-               message: "Get all categories",
-            });
-         })
-         .catch((err) => {
-            res.status(500).send({
-               status: 500,
-               payload: null,
-               message: "Failed to get categories",
-               errorDetail: err,
-            });
+      try {
+         const categories = await Category.find().sort("name");
+
+         res.status(200).send({
+            status: 200,
+            payload: categories,
+            message: "Get all categories",
          });
+      } catch (error) {
+         res.status(500).send({
+            status: 500,
+            message: "Failed to get categories",
+            errorDetail: error,
+         });
+      }
    },
    createCategory: async (req, res) => {
       const { name } = req.body;
