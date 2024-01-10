@@ -3,7 +3,26 @@ const Category = require("./model");
 module.exports = {
    getCategories: async (req, res) => {
       try {
-         const categories = await Category.find().sort("name");
+         const { search = "", p } = req.query;
+         let criteria = {};
+         let options = {
+            sort: { name: 1 },
+            pagination: false,
+         };
+
+         if (search)
+            criteria = {
+               name: { $regex: `${search}`, $options: "i" },
+            };
+
+         if (p)
+            options = {
+               ...options,
+               pagination: true,
+               page: p,
+               limit: 10,
+            };
+         const categories = await Category.paginate(criteria, options);
 
          res.status(200).send({
             status: 200,

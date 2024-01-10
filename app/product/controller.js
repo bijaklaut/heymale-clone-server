@@ -5,37 +5,41 @@ const { rootPath } = require("../../config");
 module.exports = {
    getProducts: async (req, res) => {
       try {
-         /* const products = await Product.find().populate("category", "name");
-         let activeProducts = [];
-         let inactiveProducts = [];
-
-         products.map((product) => {
-            if (product.status == "Active") return activeProducts.push(product);
-
-            return inactiveProducts.push(product);
-         }); */
          const { query = "", search = "" } = req.body;
+         const { p } = req.query;
          let criteria = {};
+         let options = {
+            pagination: false,
+            populate: { path: "category", select: "name" },
+            sort: { "category.name": 1, name: 1 },
+         };
+
          if (query)
             criteria = {
                "category.name": { $regex: `${query}`, $options: "i" },
             };
-
          if (search)
             criteria = {
                ...criteria,
                name: { $regex: `${search}`, $options: "i" },
             };
+         if (p) {
+            options = {
+               ...options,
+               pagination: true,
+               page: p,
+               limit: 2,
+            };
+         }
 
-         // Grouping via mongoose aggregate
-         const products = await Product.aggregate([
+         const aggregate = Product.aggregate([
             {
                $lookup: {
                   from: "categories",
                   localField: "category",
                   foreignField: "_id",
                   as: "category",
-                  // pipeline: [{ $project: {  name: 1 } }],
+                  pipeline: [{ $project: { name: 1 } }],
                },
             },
             {
@@ -47,15 +51,9 @@ module.exports = {
             {
                $sort: { "category.name": 1, name: 1 },
             },
-            // {
-            //    $group: {
-            //       _id: "$status",
-            //       items: {
-            //          $push: "$$ROOT",
-            //       },
-            //    },
-            // },
          ]);
+
+         const products = await Product.aggregatePaginate(aggregate, options);
 
          res.status(200).send({
             status: 200,
@@ -267,3 +265,53 @@ module.exports = {
       }
    },
 };
+
+function generatePaginationQuery(query, sort, nextKey) {
+   const sortField = sort[0] || null;
+
+   // Generate next key
+   function nextKeyFn(items) {
+      if (items.length === 0) {
+         return null;
+      }
+
+      const item = items[items.length - 1];
+
+      if (sortField == null) {
+         return { _id: item._id };
+      }
+
+      return { _id: item._id, [sortField]: item[sortField] };
+   }
+
+   if (nextKey == null) {
+      return { paginatedQuery: query, nextKeyFn };
+   }
+
+   let paginatedQuery = query;
+
+   if (sort == null) {
+      paginatedQuery._id = { $gt: nextKey._id };
+      return { paginatedQuery, nextKey };
+   }
+
+   const sortOperator = sort[1] === 1 ? "$gt" : "$lt";
+
+   const paginationQuery = [
+      { [sortField]: { [sortOperator]: nextKey[sortField] } },
+      {
+         $and: [
+            { [sortField]: nextKey[sortField] },
+            { _id: { [sortOperator]: nextKey._id } },
+         ],
+      },
+   ];
+
+   if (paginatedQuery.$or == null) {
+      paginatedQuery.$or = paginationQuery;
+   } else {
+      paginatedQuery = { $and: [query, { $or: paginationQuery }] };
+   }
+
+   return { paginatedQuery, nextKeyFn };
+}
