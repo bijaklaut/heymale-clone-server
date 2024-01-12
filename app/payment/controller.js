@@ -3,7 +3,28 @@ const Payment = require("./model");
 module.exports = {
    getPayments: async (req, res) => {
       try {
-         const payments = await Payment.find();
+         const { search = "", p } = req.query;
+         let criteria = {};
+         let options = {
+            pagination: false,
+            sort: { bankName: 1 },
+         };
+
+         if (search)
+            criteria = {
+               accountNo: { $regex: `${search}`, $options: "i" },
+            };
+
+         if (p) {
+            options = {
+               ...options,
+               pagination: true,
+               page: p,
+               limit: 10,
+            };
+         }
+
+         const payments = await Payment.paginate(criteria, options);
 
          res.status(200).send({
             status: 200,

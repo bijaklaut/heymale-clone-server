@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const paymentSchema = mongoose.Schema(
    {
@@ -26,5 +27,7 @@ const paymentSchema = mongoose.Schema(
       timestamps: true,
    }
 );
+
+paymentSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Payment", paymentSchema);
