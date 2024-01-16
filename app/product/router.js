@@ -8,20 +8,23 @@ const {
    updateProduct,
    deleteProduct,
 } = require("./controller");
+const { isLogin } = require("../middleware/auth");
 
 // router.get("/", getProducts);
 router.post("/", getProducts);
 router.post(
    "/create",
+   isLogin,
    multerMiddleware(upload.single("thumbnail")),
    createProduct
 );
 router.get("/detail/:id", productDetail);
 router.put(
    "/update/:id",
+   isLogin,
    multerMiddleware(upload.single("thumbnail")),
    updateProduct
 );
-router.delete("/:id", deleteProduct);
+router.delete("/:id", isLogin, deleteProduct);
 
 module.exports = router;

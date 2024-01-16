@@ -70,12 +70,48 @@ module.exports = {
    },
    getUsers: async (req, res) => {
       try {
-         const users = await User.find()
-            .select("-password")
-            .populate({
-               path: "addresses",
-               options: { sort: { asDefault: -1 } },
-            });
+         const { p = "", search = "" } = req.query;
+         let criteria = {};
+         let options = {
+            pagination: false,
+            sort: { createdAt: 1 },
+         };
+
+         if (search)
+            criteria = {
+               ...criteria,
+               name: { $regex: `${search}`, $options: "i" },
+            };
+
+         if (p)
+            options = {
+               ...options,
+               pagination: true,
+               page: p,
+               limit: 1,
+            };
+
+         const aggregate = User.aggregate([
+            {
+               $lookup: {
+                  from: "addresses",
+                  localField: "addresses",
+                  foreignField: "_id",
+                  as: "addresses",
+                  pipeline: [{ $sort: { asDefault: -1 } }],
+               },
+            },
+            { $match: criteria },
+            { $sort: { createdAt: 1 } },
+         ]);
+
+         // const users = await User.find()
+         //    .select("-password")
+         //    .populate({
+         //       path: "addresses",
+         //       options: { sort: { asDefault: -1 } },
+         //    });
+         const users = await User.aggregatePaginate(aggregate, options);
          res.status(200).send({
             status: 200,
             payload: users,

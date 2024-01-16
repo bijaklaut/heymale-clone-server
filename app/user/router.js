@@ -12,14 +12,14 @@ const {
 const { multerMiddleware, upload } = require("./multer-config");
 const { isLogin } = require("../middleware/auth");
 
-router.get("/", isLogin, getUsers);
+router.get("/", getUsers);
 router.post(
    "/create",
    isLogin,
    multerMiddleware(upload.single("avatar")),
    createUser
 );
-router.get("/:id", isLogin, userDetail);
+router.get("/:id", userDetail);
 router.put(
    "/update/:id",
    isLogin,
@@ -27,7 +27,12 @@ router.put(
    updateUser
 );
 router.delete("/:id", isLogin, deleteUser);
-router.put("/reauth/:id", multerMiddleware(upload.none()), updatePassword);
+router.put(
+   "/reauth/:id",
+   isLogin,
+   multerMiddleware(upload.none()),
+   updatePassword
+);
 
 // Auth
 router.post("/signin", multerMiddleware(upload.none()), authSignin);

@@ -10,7 +10,7 @@ module.exports = {
          let criteria = {};
          let options = {
             pagination: false,
-            populate: { path: "category", select: "name" },
+            // populate: { path: "category", select: "name" },
             sort: { "category.name": 1, name: 1 },
          };
 
@@ -28,7 +28,7 @@ module.exports = {
                ...options,
                pagination: true,
                page: p,
-               limit: 10,
+               limit: 2,
             };
          }
 
@@ -72,7 +72,8 @@ module.exports = {
    },
    createProduct: async (req, res) => {
       try {
-         const { name, category, variant, price, description } = req.body;
+         const { name, category, variant, price, description, status } =
+            req.body;
          let thumbnail = "";
          if (req.file) {
             thumbnail = req.file.filename;
@@ -85,6 +86,7 @@ module.exports = {
             price,
             description,
             thumbnail,
+            status,
          });
 
          await newProduct.save();

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
+const mongooseAggregatePaginate = require("mongoose-aggregate-paginate-v2");
 
 const userSchema = mongoose.Schema(
    {
@@ -67,5 +68,6 @@ userSchema.pre("save", function (next) {
       next();
    });
 });
+userSchema.plugin(mongooseAggregatePaginate);
 // userSchema.index({ "addresses.asDefault": 1, email: 1 }, { unique: true });
 module.exports = mongoose.model("User", userSchema);
