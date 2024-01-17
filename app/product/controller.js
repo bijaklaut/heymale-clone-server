@@ -28,7 +28,7 @@ module.exports = {
                ...options,
                pagination: true,
                page: p,
-               limit: 2,
+               limit: 10,
             };
          }
 

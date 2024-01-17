@@ -88,7 +88,7 @@ module.exports = {
                ...options,
                pagination: true,
                page: p,
-               limit: 1,
+               limit: 10,
             };
 
          const aggregate = User.aggregate([
