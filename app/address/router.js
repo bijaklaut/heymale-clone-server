@@ -6,6 +6,7 @@ const {
    addressDetail,
    deleteAddress,
    updateAddress,
+   testQuery,
 } = require("./controller");
 const { multerMiddleware, upload } = require("./multer-config");
 const { isLogin } = require("../middleware/auth");
@@ -20,5 +21,11 @@ router.put(
    updateAddress
 );
 router.delete("/:id", isLogin, deleteAddress);
+router.post(
+   "/testquery/:id",
+   isLogin,
+   multerMiddleware(upload.none()),
+   testQuery
+);
 
 module.exports = router;

@@ -13,15 +13,15 @@ module.exports = {
             postcode,
             phone,
             user,
-            asDefault: asDefaultReq,
+            asDefault,
          } = req.body;
 
-         if (asDefaultReq) {
-            await Address.updateOne(
-               {
-                  user,
-                  asDefault: true,
-               },
+         const totalAddress = await Address.find({ user: user });
+         const isFirst = totalAddress.length == 0;
+
+         if (asDefault) {
+            await Address.findOneAndUpdate(
+               { $and: [{ user: user }, { asDefault: true }] },
                { asDefault: false }
             );
          }
@@ -35,7 +35,7 @@ module.exports = {
             postcode,
             phone,
             user,
-            asDefault: asDefaultReq,
+            asDefault: isFirst ? true : asDefault,
          });
 
          await newAddress.save();
@@ -169,21 +169,12 @@ module.exports = {
             { new: true, runValidators: true }
          );
 
-         if (updateAddress) {
-            const theUser = await User.findById(user);
-
-            theUser.addresses.push(updateAddress._id);
-            await theUser.save();
-
-            if (theUser) {
-               res.status(201).send({
-                  status: 201,
-                  payload: updateAddress,
-                  message: "Address updated successfully",
-                  errorDetail: null,
-               });
-            }
-         }
+         res.status(201).send({
+            status: 201,
+            payload: updateAddress,
+            message: "Address updated successfully",
+            errorDetail: null,
+         });
       } catch (error) {
          if (error.name === "ValidationError") {
             return res.status(409).send({
@@ -220,8 +211,15 @@ module.exports = {
 
          const address = await Address.findById(id);
          const theUser = await User.findById(address.user);
-         theUser.addresses.pull({ _id: id });
 
+         await Address.findOneAndUpdate(
+            {
+               $and: [{ user: address.user }, { _id: { $ne: id } }],
+            },
+            { asDefault: true }
+         );
+
+         theUser.addresses.pull({ _id: id });
          await theUser.save();
 
          const deleteAddress = await Address.findOneAndDelete({ _id: id });
@@ -249,6 +247,101 @@ module.exports = {
             message: "Failed to delete address",
             errorDetail: error,
          });
+      }
+   },
+   testQuery: async (req, res) => {
+      try {
+         // const {
+         //    addressLabel,
+         //    recipientName,
+         //    address,
+         //    province,
+         //    city,
+         //    postcode,
+         //    phone,
+         //    user,
+         //    asDefault: asDefaultReq,
+         // } = req.body;
+         // const totalAddress = await Address.find({ user: address.user });
+         // const isFirst = totalAddress.length == 0;
+
+         // const theDefault = await Address.find({
+         //    user,
+         // });
+
+         const { id } = req.params;
+
+         const address = await Address.findById(id);
+         const otherAddress = await Address.findOneAndUpdate(
+            {
+               $and: [{ user: address.user }, { _id: { $ne: id } }],
+            },
+            { asDefault: true }
+         );
+
+         res.status(201).send({
+            status: 201,
+            payload: otherAddress,
+            message: "Address added successfully",
+         });
+
+         // const newAddress = new Address({
+         //    addressLabel,
+         //    recipientName,
+         //    address,
+         //    province,
+         //    city,
+         //    postcode,
+         //    phone,
+         //    user,
+         //    asDefault: asDefaultReq,
+         // });
+
+         // await newAddress.save();
+
+         // if (newAddress) {
+         //    const theUser = await User.findById(user);
+
+         //    theUser.addresses.push(newAddress._id);
+         //    await theUser.save();
+
+         //    if (theUser) {
+         //       res.status(201).send({
+         //          status: 201,
+         //          payload: newAddress,
+         //          message: "Address added successfully",
+         //          errorDetail: null,
+         //       });
+         //    }
+         // }
+      } catch (error) {
+         if (error.name === "ValidationError") {
+            return res.status(409).send({
+               status: 409,
+               payload: null,
+               message: "Validation Error",
+               errorDetail: error.errors,
+            });
+         } else if (error.code === 11000) {
+            // Mengambil nama field yang menyebabkan error
+            const key = Object.keys(error.keyValue)[0];
+            res.status(409).send({
+               status: 409,
+               code: 11000,
+               payload: null,
+               message: "Failed to create user with existed value",
+               errorDetail: {
+                  [key]: { message: "Please insert unique value" },
+               },
+            });
+         } else {
+            res.status(400).send({
+               status: 400,
+               payload: null,
+               message: "Failed to create user",
+               errorDetail: error,
+            });
+         }
       }
    },
 };
