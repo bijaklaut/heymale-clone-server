@@ -92,16 +92,24 @@ module.exports = {
             };
 
          const aggregate = User.aggregate([
+            { $match: criteria },
             {
                $lookup: {
                   from: "addresses",
-                  localField: "addresses",
-                  foreignField: "_id",
+                  let: { localAddress: "$addresses" },
+                  pipeline: [
+                     {
+                        $match: {
+                           $expr: {
+                              $in: ["$_id", "$$localAddress"],
+                           },
+                        },
+                     },
+                     { $sort: { asDefault: -1 } },
+                  ],
                   as: "addresses",
-                  pipeline: [{ $sort: { asDefault: -1 } }],
                },
             },
-            { $match: criteria },
             { $sort: { createdAt: 1 } },
          ]);
 
