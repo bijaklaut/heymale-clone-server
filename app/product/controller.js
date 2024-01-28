@@ -38,8 +38,8 @@ module.exports = {
                   from: "categories",
                   localField: "category",
                   foreignField: "_id",
+                  // pipeline: [{ $project: { name: 1 } }],
                   as: "category",
-                  pipeline: [{ $project: { name: 1 } }],
                },
             },
             {
