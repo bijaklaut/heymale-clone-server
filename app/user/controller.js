@@ -113,17 +113,12 @@ module.exports = {
             { $sort: { createdAt: 1 } },
          ]);
 
-         // const users = await User.find()
-         //    .select("-password")
-         //    .populate({
-         //       path: "addresses",
-         //       options: { sort: { asDefault: -1 } },
-         //    });
          const users = await User.aggregatePaginate(aggregate, options);
+
          res.status(200).send({
             status: 200,
             payload: users,
-            message: "Get all users",
+            message: "Get users",
             errorDetail: null,
          });
       } catch (error) {

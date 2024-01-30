@@ -5,24 +5,25 @@ const { rootPath } = require("../../config");
 module.exports = {
    getProducts: async (req, res) => {
       try {
-         const { query = "", search = "" } = req.body;
+         const { query: filter, search } = req.body;
          const { p } = req.query;
          let criteria = {};
          let options = {
             pagination: false,
-            // populate: { path: "category", select: "name" },
             sort: { "category.name": 1, name: 1 },
          };
 
-         if (query)
+         if (filter) {
             criteria = {
-               "category.name": { $regex: `${query}`, $options: "i" },
+               "category.name": { $regex: `${filter}`, $options: "i" },
             };
-         if (search)
+         }
+         if (search) {
             criteria = {
                ...criteria,
                name: { $regex: `${search}`, $options: "i" },
             };
+         }
          if (p) {
             options = {
                ...options,
@@ -38,7 +39,6 @@ module.exports = {
                   from: "categories",
                   localField: "category",
                   foreignField: "_id",
-                  // pipeline: [{ $project: { name: 1 } }],
                   as: "category",
                },
             },
@@ -75,6 +75,7 @@ module.exports = {
          const { name, category, variant, price, description, status } =
             req.body;
          let thumbnail = "";
+
          if (req.file) {
             thumbnail = req.file.filename;
          }
@@ -121,7 +122,7 @@ module.exports = {
             });
          } else {
             res.status(400).send({
-               status: 409,
+               status: 400,
                payload: null,
                message: "Failed to create product",
                errorDetail: err,
