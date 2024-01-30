@@ -216,7 +216,7 @@ module.exports = {
             res.status(409).send({
                status: 409,
                payload: null,
-               message: `Failed to create product with existed ${key}`,
+               message: `Failed to update product with existed ${key}`,
                errorDetail: err,
             });
          } else {
