@@ -4,6 +4,7 @@ const mongoosePaginate = require("mongoose-aggregate-paginate-v2");
 const voucherSchema = mongoose.Schema({
    voucherName: {
       type: String,
+      unique: true,
       required: [true, "Voucher Name is required"],
       minLength: [3, "Voucher Name length must be between 3-50 characters"],
       maxLength: [50, "Voucher Name length must be between 3-50 characters"],
@@ -53,6 +54,7 @@ const voucherSchema = mongoose.Schema({
    ],
    voucherCode: {
       type: String,
+      unique: true,
       required: [true, "Voucher Code is required"],
       minLength: [3, "Voucher Code length must be between 3-50 characters"],
       maxLength: [50, "Voucher Code length must be between 3-50 characters"],

@@ -1,57 +1,6 @@
 const Voucher = require("./model");
 
 module.exports = {
-   createVoucher: async (req, res) => {
-      try {
-         const {
-            voucherName,
-            conditions,
-            minTransaction,
-            validProducts,
-            validCategories,
-            voucherCode,
-            value,
-            validUntil,
-            status,
-            voucherQuota,
-         } = req.body;
-
-         const newVoucher = new Voucher({
-            voucherName,
-            conditions,
-            minTransaction,
-            validProducts,
-            validCategories,
-            voucherCode,
-            value,
-            validUntil,
-            status,
-            voucherQuota,
-         });
-
-         await newVoucher.save();
-
-         return res.status(201).send({
-            status: 201,
-            payload: newVoucher,
-            message: "Voucher created successfully",
-         });
-      } catch (error) {
-         if (error.name == "ValidationError") {
-            return res.status(409).send({
-               status: 409,
-               errorDetail: error.errors,
-               message: "Validation Error",
-            });
-         }
-
-         return res.status(400).send({
-            status: 400,
-            errorDetail: error,
-            message: "Failed to create voucher",
-         });
-      }
-   },
    getVouchers: async (req, res) => {
       try {
          const { search } = req.body;
@@ -127,6 +76,148 @@ module.exports = {
          });
       }
    },
+   getVoucherDetail: async (req, res) => {
+      try {
+         const { id } = req.params;
+         const voucher = await Voucher.findById(id);
+
+         res.status(200).send({
+            status: 200,
+            payload: voucher,
+            message: "Get voucher detail",
+         });
+      } catch (error) {
+         res.status(500).send({
+            status: 500,
+            payload: null,
+            message: "Internal Server Error",
+            errorDetail: error,
+         });
+      }
+   },
+   createVoucher: async (req, res) => {
+      try {
+         const {
+            voucherName,
+            conditions,
+            minTransaction,
+            validProducts,
+            validCategories,
+            voucherCode,
+            value,
+            validUntil,
+            status,
+            voucherQuota,
+         } = req.body;
+
+         const newVoucher = new Voucher({
+            voucherName,
+            conditions,
+            minTransaction,
+            validProducts,
+            validCategories,
+            voucherCode,
+            value,
+            validUntil,
+            status,
+            voucherQuota,
+         });
+
+         await newVoucher.save();
+
+         return res.status(201).send({
+            status: 201,
+            payload: newVoucher,
+            message: "Voucher created successfully",
+         });
+      } catch (error) {
+         if (error.name == "ValidationError") {
+            return res.status(409).send({
+               status: 409,
+               errorDetail: error.errors,
+               message: error.name,
+            });
+         }
+
+         if (error.code === 11000) {
+            const key = Object.keys(error.keyValue)[0];
+            return res.status(409).send({
+               status: 409,
+               message: `Failed to update voucher with existed ${key}`,
+               errorDetail: error,
+            });
+         }
+
+         return res.status(400).send({
+            status: 400,
+            errorDetail: error,
+            message: "Failed to create voucher",
+         });
+      }
+   },
+   updateVoucher: async (req, res) => {
+      try {
+         const {
+            _id,
+            voucherName,
+            conditions,
+            minTransaction,
+            validProducts,
+            validCategories,
+            voucherCode,
+            value,
+            validUntil,
+            status,
+            voucherQuota,
+         } = req.body;
+
+         const updateVoucher = await Voucher.findByIdAndUpdate(
+            _id,
+            {
+               voucherName,
+               conditions,
+               minTransaction,
+               validProducts,
+               validCategories,
+               voucherCode,
+               value,
+               validUntil,
+               status,
+               voucherQuota,
+            },
+            { new: true, runValidators: true }
+         );
+
+         res.status(201).send({
+            status: 201,
+            payload: updateVoucher,
+            message: "Voucher updated successfully",
+         });
+      } catch (error) {
+         if (error.name === "ValidationError") {
+            return res.status(409).send({
+               status: 409,
+               errorDetail: error.errors,
+               message: error.name,
+            });
+         }
+
+         if (error.code === 11000) {
+            const key = Object.keys(error.keyValue)[0];
+            return res.status(409).send({
+               status: 409,
+               errorDetail: error,
+               message: `Failed to update voucher with existed ${key}`,
+            });
+         }
+
+         return res.status(400).send({
+            status: 400,
+            errorDetail: error,
+            message: "Failed to update voucher",
+         });
+      }
+   },
    deleteVoucher: async (req, res) => {
       try {
          const { id } = req.params;
@@ -147,8 +238,8 @@ module.exports = {
       } catch (error) {
          res.status(404).send({
             status: 404,
-            message: "Failed to delete Voucher",
             errorDetail: error,
+            message: "Failed to delete Voucher",
          });
       }
    },
