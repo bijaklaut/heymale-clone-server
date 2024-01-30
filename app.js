@@ -12,6 +12,7 @@ const paymentRouter = require("./app/payment/router");
 const productRouter = require("./app/product/router");
 const userRouter = require("./app/user/router");
 const addressRouter = require("./app/address/router");
+const voucherRouter = require("./app/voucher/router");
 
 const apiVer = "/api/v1";
 
@@ -29,5 +30,6 @@ app.use(`${apiVer}/payment`, paymentRouter);
 app.use(`${apiVer}/product`, productRouter);
 app.use(`${apiVer}/user`, userRouter);
 app.use(`${apiVer}/address`, addressRouter);
+app.use(`${apiVer}/voucher`, voucherRouter);
 
 module.exports = app;
