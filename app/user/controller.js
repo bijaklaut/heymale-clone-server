@@ -264,7 +264,7 @@ module.exports = {
          res.status(404).send({
             status: 404,
             payload: null,
-            message: "Failed to delete user",
+            message: "Failed to delete User",
             errorDetail: error,
          });
       }
