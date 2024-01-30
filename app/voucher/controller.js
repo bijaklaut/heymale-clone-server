@@ -127,4 +127,29 @@ module.exports = {
          });
       }
    },
+   deleteVoucher: async (req, res) => {
+      try {
+         const { id } = req.params;
+         const result = await Voucher.findOneAndDelete({ _id: id });
+
+         if (result) {
+            res.status(200).send({
+               status: 200,
+               payload: result,
+               message: "Voucher deleted successfully",
+            });
+         } else {
+            res.status(404).send({
+               status: 404,
+               message: "Voucher not found",
+            });
+         }
+      } catch (error) {
+         res.status(404).send({
+            status: 404,
+            message: "Failed to delete Voucher",
+            errorDetail: error,
+         });
+      }
+   },
 };
