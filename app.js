@@ -32,4 +32,11 @@ app.use(`${apiVer}/user`, userRouter);
 app.use(`${apiVer}/address`, addressRouter);
 app.use(`${apiVer}/voucher`, voucherRouter);
 
+app.use((req, res, next) => {
+   res.status(404).send({
+      status: 404,
+      message: `Failed to handle request`,
+   });
+});
+
 module.exports = app;
