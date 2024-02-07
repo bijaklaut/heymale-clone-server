@@ -56,8 +56,26 @@ module.exports = {
                            },
                         },
                      },
+                     {
+                        $lookup: {
+                           from: "categories",
+                           localField: "category",
+                           foreignField: "_id",
+                           as: "category",
+                        },
+                     },
+                     {
+                        $unwind: "$category",
+                     },
                   ],
                   as: "validProducts",
+               },
+            },
+            {
+               $set: {
+                  validUntil: {
+                     $dateToString: { format: "%Y-%m-%d", date: "$validUntil" },
+                  },
                },
             },
          ]);
@@ -110,18 +128,29 @@ module.exports = {
             voucherQuota,
          } = req.body;
 
-         const newVoucher = new Voucher({
+         let data = {
             voucherName,
             conditions,
-            minTransaction,
-            validProducts,
-            validCategories,
             voucherCode,
             value,
             validUntil,
             status,
             voucherQuota,
-         });
+         };
+
+         switch (conditions) {
+            case "Minimal Transaction":
+               data = { ...data, minTransaction };
+               break;
+            case "Particular Product":
+               data = { ...data, validProducts };
+               break;
+            case "Particular Category":
+               data = { ...data, validCategories };
+               break;
+         }
+
+         const newVoucher = new Voucher(data);
 
          await newVoucher.save();
 
@@ -158,7 +187,7 @@ module.exports = {
    updateVoucher: async (req, res) => {
       try {
          const {
-            _id,
+            id,
             voucherName,
             conditions,
             minTransaction,
@@ -171,22 +200,47 @@ module.exports = {
             voucherQuota,
          } = req.body;
 
-         const updateVoucher = await Voucher.findByIdAndUpdate(
-            _id,
-            {
-               voucherName,
-               conditions,
-               minTransaction,
-               validProducts,
-               validCategories,
-               voucherCode,
-               value,
-               validUntil,
-               status,
-               voucherQuota,
-            },
-            { new: true, runValidators: true }
-         );
+         let data = {
+            voucherName,
+            conditions,
+            voucherCode,
+            value,
+            validUntil,
+            status,
+            voucherQuota,
+         };
+
+         switch (conditions) {
+            case "Minimal Transaction":
+               data = {
+                  ...data,
+                  minTransaction,
+                  validProducts: [],
+                  validCategories: [],
+               };
+               break;
+            case "Particular Product":
+               data = {
+                  ...data,
+                  minTransaction: 0,
+                  validProducts,
+                  validCategories: [],
+               };
+               break;
+            case "Particular Category":
+               data = {
+                  ...data,
+                  minTransaction: 0,
+                  validProducts: [],
+                  validCategories,
+               };
+               break;
+         }
+
+         const updateVoucher = await Voucher.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+         });
 
          res.status(201).send({
             status: 201,
