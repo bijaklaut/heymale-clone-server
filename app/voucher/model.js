@@ -62,6 +62,7 @@ const voucherSchema = mongoose.Schema({
    value: {
       type: Number,
       required: [true, "Voucher Value is required"],
+      min: [1000, "Voucher minimal value is Rp. 1.000"],
    },
    validUntil: {
       type: Date,
@@ -69,7 +70,7 @@ const voucherSchema = mongoose.Schema({
    },
    status: {
       type: String,
-      enum: ["Active", "Inactive"],
+      required: [true, "Voucher Status is required"],
    },
    voucherQuota: {
       type: Number,
