@@ -172,7 +172,7 @@ module.exports = {
             const key = Object.keys(error.keyValue)[0];
             return res.status(409).send({
                status: 409,
-               message: `Failed to update voucher with existed ${key}`,
+               message: `Failed to create voucher with existed ${key}`,
                errorDetail: error,
             });
          }
