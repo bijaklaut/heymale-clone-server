@@ -8,9 +8,8 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault,
@@ -30,9 +29,8 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault: isFirst ? true : asDefault,
@@ -131,25 +129,18 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            district,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault,
          } = req.body;
 
          if (asDefault) {
-            const checkAddress = await Address.findOne({
-               user,
-               asDefault: true,
-            });
-
-            if (checkAddress) {
-               checkAddress.asDefault = false;
-               await checkAddress.save();
-            }
+            await Address.findOneAndUpdate(
+               { $and: [{ user: user }, { asDefault: true }] },
+               { asDefault: false }
+            );
          }
 
          const updateAddress = await Address.findByIdAndUpdate(
@@ -158,10 +149,8 @@ module.exports = {
                addressLabel,
                recipientName,
                address,
-               province,
-               city,
-               district,
-               postcode,
+               addressNote,
+               addressArea,
                phone,
                user,
                asDefault,

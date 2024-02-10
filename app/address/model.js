@@ -28,37 +28,43 @@ const addressSchema = mongoose.Schema(
          required: [true, "Address is required"],
          maxLength: [500, "Address maximum length is 500 characters"],
       },
-      province: {
-         id: {
-            type: String,
-            required: [true, "Province is required"],
-         },
-         name: {
-            type: String,
-            required: [true, "Province is required"],
-         },
-      },
-      city: {
-         id: {
-            type: String,
-            required: [true, "City is required"],
-         },
-         name: {
-            type: String,
-            required: [true, "City is required"],
-         },
-      },
-      postcode: {
+      addressNote: {
          type: String,
-         required: [true, "Postal code is required"],
-         minLength: [3, "Postal code length must be between 3-10 characters"],
-         maxLength: [10, "Postal code length must be between 3-10 characters"],
+         maxLength: [100, "Address Note maximum length is 100 characters"],
       },
       phone: {
          type: String,
-         required: [true, "Phone number is required"],
-         minLength: [8, "Phone number length must be between 8-15 characters"],
-         maxLength: [15, "Phone number length must be between 8-15 characters"],
+         required: [true, "Recipient's contact phone is required"],
+         minLength: [
+            8,
+            "Recipient's contact phone length must be between 8-15 characters",
+         ],
+         maxLength: [
+            15,
+            "Recipient's contact phone length must be between 8-15 characters",
+         ],
+      },
+      addressArea: {
+         areaId: {
+            type: String,
+            required: [true, "Area ID is required"],
+         },
+         province: {
+            type: String,
+            required: [true, "Province is required"],
+         },
+         city: {
+            type: String,
+            required: [true, "City is required"],
+         },
+         district: {
+            type: String,
+            required: [true, "District is required"],
+         },
+         postalCode: {
+            type: String,
+            required: [true, "Postal Code is required"],
+         },
       },
       user: {
          type: mongoose.Schema.Types.ObjectId,
