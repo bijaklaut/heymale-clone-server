@@ -2,8 +2,16 @@ const axios = require("axios").default;
 const { midBaseURLDev, midServerDev } = require("../config");
 const Transaction = require("./transaction/model");
 
-const getTodayDate = () => {
-   const today = new Date();
+const getTodayDate = (forShipment = false) => {
+   let today = new Date();
+
+   // Any shipping data that generated after 17.00
+   // will be shipped tomorrow
+   if (forShipment && today.getHours() > 16) {
+      const tomorrow = today.getDate() + 1;
+      today.setDate(tomorrow);
+   }
+
    const date = today.getDate() < 10 ? `0${today.getDate()}` : today.getDate();
    const month =
       today.getMonth() + 1 < 10
@@ -57,10 +65,10 @@ const orderItemsAction = (orderItems) => {
 
          if (item.variants[size] > 0) {
             let newData = {
-               productName: `${item.item_name} - ${size.toUpperCase()}`,
+               _id: item._id,
+               item_name: `${item.item_name} - ${size.toUpperCase()}`,
                price: item.price,
                quantity: item.variants[size],
-               thumbnail: item.thumbnail,
             };
 
             newOrderItems.push(newData);
@@ -220,16 +228,16 @@ const generateOrderData = (
       orderItem: newOrderItems,
       shippingDetail: shipping_id,
       transaction: newTransaction._id,
-      voucher: voucher._id,
+      status: "pending",
+      voucher: voucher,
       price: newTransaction.gross_amount - shipping.price + voucher.value,
+      shippingFee: shipping.price,
       totalPrice: newTransaction.gross_amount,
    };
 
    return orderData;
 };
 const cancelPayment = async (order_id) => {
-   console.log("INI ORDER ID: ", order_id);
-
    const encodedKey = Buffer.from(midServerDev).toString("base64");
    const checkPayment = await axios({
       method: "GET",
@@ -238,7 +246,6 @@ const cancelPayment = async (order_id) => {
          accept: "application/json",
          Authorization: `Basic ${encodedKey}`,
       },
-      // auth: { username: midServerDev, password: "" },
    });
 
    if (checkPayment.data.status_code == 200) {
@@ -249,12 +256,41 @@ const cancelPayment = async (order_id) => {
             accept: "application/json",
             Authorization: `Basic ${encodedKey}`,
          },
-         // auth: { username: midServerDev, password: "" },
       });
       return result.data;
    }
 
    return checkPayment.data;
+};
+const transformShippingData = (shipping) => {
+   const data = {
+      shipper_contact_name: shipping.shipper.name,
+      shipper_contact_phone: shipping.shipper.phone,
+      shipper_contact_email: shipping.shipper.email,
+      shipper_organization: shipping.shipper.organization,
+      origin_contact_name: shipping.origin.contact_name,
+      origin_contact_phone: shipping.origin.contact_phone,
+      origin_address: shipping.origin.address,
+      origin_note: shipping.origin.note,
+      origin_postal_code: shipping.origin.postal_code,
+      destination_contact_name: shipping.destination.contact_name,
+      destination_contact_phone: shipping.destination.contact_phone,
+      destination_address: shipping.destination.address,
+      destination_postal_code: shipping.destination.postal_code,
+      destination_note: shipping.destination.note,
+      courier_company: shipping.courier.company,
+      courier_type: shipping.courier.type,
+      courier_insurance: 0,
+      delivery_type: "later",
+      delivery_date: getTodayDate(true),
+      delivery_time: "19:00",
+      order_note: "Please be careful",
+      metadata: {},
+      items: shipping.items,
+      reference_id: shipping.reference_id,
+   };
+
+   return data;
 };
 
 module.exports = {
@@ -266,4 +302,5 @@ module.exports = {
    generateShippingData,
    generateOrderData,
    cancelPayment,
+   transformShippingData,
 };
