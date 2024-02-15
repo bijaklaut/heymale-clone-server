@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const shipmentSchema = mongoose.Schema({
-   order_id: {
+   shipment_order_id: {
       type: String,
    },
    shipper: {
