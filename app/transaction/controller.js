@@ -1,23 +1,47 @@
-const generateInvoice = () => {
-   const today = new Date();
-   const date = today.toISOString().split("T")[0].split("-").join("");
-   const hours =
-      today.getHours() < 10 ? `0${today.getHours()}` : today.getHours();
-   const minutes =
-      today.getMinutes() < 10 ? `0${today.getMinutes()}` : today.getMinutes();
-   const seconds =
-      today.getSeconds() < 10 ? `0${today.getSeconds()}` : today.getSeconds();
-
-   return `HYML${date}${hours}${minutes}${seconds}`;
-};
+const { midServerDev, midBaseURLDev } = require("../../config");
+const Transaction = require("./model");
+const axios = require("axios").default;
 
 module.exports = {
    createTransaction: async (req, res) => {
-      const { user, orderItem, shippingAddress, voucher, price } = req.body;
-      let invoice = generateInvoice();
+      try {
+         const newTransaction = await Transaction.create(req.body);
 
-      res.status(200).send({
-         invoice: generateInvoice(),
-      });
+         res.status(201).send({
+            status: 201,
+            message: "Transaction created successfully",
+            payload: newTransaction,
+         });
+      } catch (error) {
+         res.status(400).send({
+            status: 400,
+            message: "Failed to create transaction",
+            errorDetail: error,
+         });
+      }
+   },
+   cancelTransaction: async (req, res) => {
+      try {
+         const { order_id } = req.params;
+         const url = `${midBaseURLDev}/v2/${order_id}/cancel`;
+
+         const request = await axios({
+            url,
+            auth: { username: midServerDev, password: "" },
+            method: "POST",
+         });
+
+         res.status(200).send({
+            status: 400,
+            message: "Success",
+            payload: request.data,
+         });
+      } catch (error) {
+         res.status(400).send({
+            status: 400,
+            message: "Failed to cancel transaction",
+            errorDetail: error.data,
+         });
+      }
    },
 };

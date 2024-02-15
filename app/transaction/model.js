@@ -2,57 +2,61 @@ const mongoose = require("mongoose");
 const mongoosePaginate = require("mongoose-aggregate-paginate-v2");
 
 const transactionSchema = mongoose.Schema({
-   invoice: {
+   transaction_id: {
       type: String,
       unique: true,
-      required: [true, "Transaction Invoice is required"],
+      required: [true, "Transaction ID is required"],
    },
-   user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "User is required"],
+   order_id: {
+      type: String,
+      unique: true,
+      required: [true, "Order ID is required"],
    },
-   orderItem: [
+   merchant_id: {
+      type: String,
+   },
+   gross_amount: {
+      type: Number,
+      required: [true, "Transaction Amount is required"],
+   },
+   currency: {
+      type: String,
+      required: [true, "Currency is required"],
+   },
+   payment_type: {
+      type: String,
+      required: [true, "Payment Type is required"],
+   },
+   transaction_time: {
+      type: Date,
+      required: [true, "Transaction Time is required"],
+   },
+   transaction_status: {
+      type: String,
+      required: [true, "Transaction Status is required"],
+   },
+   va_numbers: [
       {
-         productName: {
+         bank: {
             type: String,
-            required: [true, "Product Name is required"],
          },
-         quantity: {
-            type: Number,
-            required: [true, "Quantity is required"],
-         },
-         price: {
-            type: Number,
-            required: [true, "Price is required"],
+         va_number: {
+            type: String,
          },
       },
    ],
-   shippingAddress: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
-      required: [true, "Shipping Address is required"],
+   fraud_status: {
+      type: String,
+      required: [true, "Fraud Status is required"],
    },
-   shippingFee: {
-      type: Number,
-      required: [true, "Shipping Fee is required"],
+   bill_key: {
+      type: String,
    },
-   payment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Payment",
-      required: [true, "Payment is required"],
+   biller_code: {
+      type: String,
    },
-   voucher: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Voucher",
-   },
-   price: {
-      type: Number,
-      required: [true, "Price is required"],
-   },
-   totalPrice: {
-      type: Number,
-      required: [true, "Total Price is required"],
+   expiry_time: {
+      type: Date,
    },
 });
 
