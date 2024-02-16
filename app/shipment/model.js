@@ -210,6 +210,10 @@ const shipmentSchema = mongoose.Schema(
       status: {
          type: String,
       },
+      manualUpdated: {
+         type: Boolean,
+         default: false,
+      },
    },
    { timestamps: true }
 );

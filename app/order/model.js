@@ -66,6 +66,10 @@ const orderSchema = mongoose.Schema(
          type: Number,
          required: [true, "Total Price is required"],
       },
+      manualUpdated: {
+         type: Boolean,
+         default: false,
+      },
    },
    { timestamps: true }
 );

@@ -59,6 +59,10 @@ const transactionSchema = mongoose.Schema(
       expiry_time: {
          type: Date,
       },
+      manualUpdated: {
+         type: Boolean,
+         default: false,
+      },
    },
    { timestamps: true }
 );
