@@ -23,7 +23,7 @@ const getTodayDate = (forShipment = false) => {
 };
 const generateInvoice = async () => {
    const today = new Date();
-   const fullDate = getTodayDate().split("-").join("");
+   const fullDate = getTodayDate(false).split("-").join("");
    const hours =
       today.getHours() < 10 ? `0${today.getHours()}` : today.getHours();
    const minutes =
@@ -156,6 +156,41 @@ const generatePaymentData = (
             bank: payment.bank,
          },
       };
+
+      if (payment.bank == "bca") {
+         paymentData = {
+            ...paymentData,
+            bank_transfer: {
+               ...bank_transfer,
+               free_text: {
+                  inquiry: [
+                     {
+                        id: "Pembelian di Heymale Clone",
+                        en: "Purchase at Heymale Clone",
+                     },
+                  ],
+                  payment: [
+                     {
+                        id: `Order ID ${invoice}`,
+                        en: `Order ID ${invoice}`,
+                     },
+                  ],
+               },
+            },
+         };
+      }
+
+      if (payment.bank == "permata") {
+         paymentData = {
+            ...paymentData,
+            bank_transfer: {
+               ...bank_transfer,
+               permata: {
+                  recipient_name: "Heymale Clone",
+               },
+            },
+         };
+      }
    }
 
    if (paymentData.payment_type == "echannel") {
@@ -163,7 +198,9 @@ const generatePaymentData = (
          ...paymentData,
          echannel: {
             bill_info1: "Payment:",
-            bill_info2: "Purchase at HeymaleClone",
+            bill_info2: "Purchase at Heymale Clone",
+            bill_info3: "Order ID:",
+            bill_info4: invoice,
          },
       };
    }

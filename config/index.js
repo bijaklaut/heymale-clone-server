@@ -12,4 +12,5 @@ module.exports = {
    midServerDev: process.env.MID_SANDBOX_SERVER,
    biteshipBaseURL: process.env.BITESHIP_BASEURL,
    biteshipTestToken: process.env.BITESHIP_TEST_TOKEN,
+   biteshipSignature: process.env.BITESHIP_WEBHOOKS_SIGNATURE,
 };
