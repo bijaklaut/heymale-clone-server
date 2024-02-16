@@ -10,6 +10,7 @@ const {
    midClientDev,
    biteshipBaseURL,
    biteshipTestToken,
+   biteshipSignature,
 } = require("../../config");
 const midtransClient = require("midtrans-client");
 const {
@@ -102,8 +103,6 @@ module.exports = {
          session.endSession();
 
          return res.status(200).send({
-            bulkResult,
-            appliedVoucher,
             paymentCharge,
             newTransaction,
             newShipment,
@@ -118,6 +117,7 @@ module.exports = {
          let responseData = {
             status: 400,
             message: "Failed to create order",
+            error_details: error,
             cancelPaymentResult,
          };
 
@@ -125,7 +125,7 @@ module.exports = {
             responseData = {
                ...responseData,
                status: Number(error.httpStatusCode),
-               errorDetail: error.ApiResponse,
+               error_details: error.ApiResponse,
                message: `Failed to process order payment. Please try again later (${error.httpStatusCode})`,
             };
          }
@@ -134,7 +134,7 @@ module.exports = {
             responseData = {
                ...responseData,
                status: 409,
-               errorDetail: error.errors,
+               error_details: error.errors,
                message: error.name,
             };
          }
@@ -145,7 +145,7 @@ module.exports = {
                ...responseData,
                status: 409,
                message: `Got problem on field ${key}`,
-               errorDetail: error,
+               error_details: error,
             };
          }
 
@@ -256,23 +256,22 @@ module.exports = {
          const shippingData = transformShippingData(order.shippingDetail);
 
          // Create Shipping order
-         const createShippingOrder = await axios({
+         const { data: shippingOrder } = await axios({
             url: shippingOrderURL,
             method: "POST",
             headers: { Authorization: `Bearer ${biteshipTestToken}` },
             data: shippingData,
          });
-         const shippingOrder = createShippingOrder.data;
          const { id: shipment_order_id } = shippingOrder;
 
          // Create new Shipment from Shipping order response
-         const updateShipment = await Shipment.updateOne(
+         const updateShipment = await Shipment.findOneAndUpdate(
             { reference_id: invoice },
             {
                ...shippingOrder,
                shipment_order_id,
             },
-            { session }
+            { new: true, runValidation: true, session }
          );
 
          await session.commitTransaction();
@@ -281,6 +280,123 @@ module.exports = {
             .send({ shippingOrder, updateShipment, shippingData, order });
       } catch (error) {
          await session.abortTransaction();
+         let responseData = {
+            status: 400,
+            error_details: error,
+         };
+
+         if (error.name == "AxiosError") {
+            responseData = {
+               ...responseData,
+               message: error.message,
+            };
+         }
+
+         if (error.name === "ValidationError") {
+            const { errors } = error;
+            responseData = {
+               ...responseData,
+               status: 409,
+               message: error.name,
+               error_details: { ...error_details, errors },
+            };
+         }
+
+         if (error.code === 11000) {
+            // Mengambil nama field yang menyebabkan error
+            const key = Object.keys(error.keyValue)[0];
+            responseData = {
+               ...responseData,
+               status: 409,
+               message: `Failed to update shipment with existed ${key}`,
+               error_details: { ...error_details, error },
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } finally {
+         session.endSession();
+      }
+   },
+   shipmentHooks: async (req, res) => {
+      const shipmentReq = req.body;
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      if (req.headers["bts-signature"] !== biteshipSignature)
+         throw "Signature key invalid. Request denied";
+
+      try {
+         let responseData = {
+            status: 200,
+         };
+
+         if (shipmentReq.event === "order.status") {
+            const updateShipment = await Shipment.findOneAndUpdate(
+               { shipment_order_id: shipmentReq.order_id },
+               {
+                  "courier.tracking_id": shipmentReq.courier_tracking_id,
+                  "courier.waybill_id": shipmentReq.courier_waybill_id,
+                  "courier.company": shipmentReq.courier_company,
+                  "courier.type": shipmentReq.courier_type,
+                  "courier.driver_name": shipmentReq.courier_driver_name,
+                  "courier.driver_phone": shipmentReq.courier_driver_phone,
+                  "courier.link": shipmentReq.courier_link,
+                  price: shipmentReq.order_price,
+                  status: shipmentReq.status,
+               },
+               { session, new: true, runValidation: true }
+            );
+
+            responseData = {
+               status: 201,
+               updateShipment,
+            };
+         }
+         if (shipmentReq.event === "order.waybill_id") {
+            const updateShipment = await Shipment.findOneAndUpdate(
+               { shipment_order_id: shipmentReq.order_id },
+               {
+                  "destination.cash_on_delivery.fee":
+                     shipmentReq.cash_on_delivery_fee,
+                  "courier.tracking_id": shipmentReq.courier_tracking_id,
+                  "courier.waybill_id": shipmentReq.courier_waybill_id,
+                  price: shipmentReq.price,
+                  "destination.proof_of_delivery.fee":
+                     shipmentReq.proof_of_delivery_fee,
+                  status: shipmentReq.status,
+               },
+               { session, new: true, runValidation: true }
+            );
+
+            responseData = {
+               status: 201,
+               updateShipment,
+            };
+         }
+         if (shipmentReq.event === "order.price") {
+            const updateShipment = await Shipment.findOneAndUpdate(
+               { shipment_order_id: shipmentReq.order_id },
+               {
+                  "courier.tracking_id": shipmentReq.courier_tracking_id,
+                  "courier.waybill_id": shipmentReq.courier_waybill_id,
+                  status: shipmentReq.status,
+               },
+               { session, new: true, runValidation: true }
+            );
+
+            responseData = {
+               status: 201,
+               updateShipment,
+            };
+         }
+
+         await session.commitTransaction();
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         await session.abortTransaction();
+
          let responseData = {
             status: 400,
             error_details: error,
