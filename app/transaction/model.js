@@ -59,7 +59,7 @@ const transactionSchema = mongoose.Schema(
       expiry_time: {
          type: Date,
       },
-      manualUpdated: {
+      manual_updated: {
          type: Boolean,
          default: false,
       },

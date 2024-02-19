@@ -210,7 +210,7 @@ const shipmentSchema = mongoose.Schema(
       status: {
          type: String,
       },
-      manualUpdated: {
+      manual_updated: {
          type: Boolean,
          default: false,
       },
