@@ -69,6 +69,7 @@ const orderItemsAction = (orderItems) => {
                item_name: `${item.item_name} - ${size.toUpperCase()}`,
                price: item.price,
                quantity: item.variants[size],
+               thumbnail: item.thumbnail,
             };
 
             newOrderItems.push(newData);
@@ -150,47 +151,43 @@ const generatePaymentData = (
    };
 
    if (paymentData.payment_type == "bank_transfer") {
-      paymentData = {
-         ...paymentData,
-         bank_transfer: {
-            bank: payment.bank,
-         },
+      let bank_transfer = {
+         bank: payment.bank,
       };
 
       if (payment.bank == "bca") {
-         paymentData = {
-            ...paymentData,
-            bank_transfer: {
-               ...bank_transfer,
-               free_text: {
-                  inquiry: [
-                     {
-                        id: "Pembelian di Heymale Clone",
-                        en: "Purchase at Heymale Clone",
-                     },
-                  ],
-                  payment: [
-                     {
-                        id: `Order ID ${invoice}`,
-                        en: `Order ID ${invoice}`,
-                     },
-                  ],
-               },
+         bank_transfer = {
+            ...bank_transfer,
+            free_text: {
+               inquiry: [
+                  {
+                     id: "Pembelian di Heymale Clone",
+                     en: "Purchase at Heymale Clone",
+                  },
+               ],
+               payment: [
+                  {
+                     id: `Order ID ${invoice}`,
+                     en: `Order ID ${invoice}`,
+                  },
+               ],
             },
          };
       }
 
       if (payment.bank == "permata") {
-         paymentData = {
-            ...paymentData,
-            bank_transfer: {
-               ...bank_transfer,
-               permata: {
-                  recipient_name: "Heymale Clone",
-               },
+         bank_transfer = {
+            ...bank_transfer,
+            permata: {
+               recipient_name: "Heymale Clone",
             },
          };
       }
+
+      paymentData = {
+         ...paymentData,
+         bank_transfer,
+      };
    }
 
    if (paymentData.payment_type == "echannel") {
@@ -262,14 +259,14 @@ const generateOrderData = (
    const orderData = {
       invoice: newTransaction.order_id,
       user: user,
-      orderItem: newOrderItems,
-      shippingDetail: shipping_id,
+      order_item: newOrderItems,
+      shipping_detail: shipping_id,
       transaction: newTransaction._id,
       status: "pending",
       voucher: voucher,
       price: newTransaction.gross_amount - shipping.price + voucher.value,
-      shippingFee: shipping.price,
-      totalPrice: newTransaction.gross_amount,
+      shipping_fee: shipping.price,
+      total_price: newTransaction.gross_amount,
    };
 
    return orderData;
