@@ -13,7 +13,7 @@ const orderSchema = mongoose.Schema(
          ref: "User",
          required: [true, "User is required"],
       },
-      orderItem: [
+      order_item: [
          {
             _id: {
                type: mongoose.Schema.Types.ObjectId,
@@ -22,6 +22,9 @@ const orderSchema = mongoose.Schema(
             item_name: {
                type: String,
                required: [true, "Product Name is required"],
+            },
+            thumbnail: {
+               type: String,
             },
             quantity: {
                type: Number,
@@ -36,7 +39,7 @@ const orderSchema = mongoose.Schema(
       status: {
          type: String,
       },
-      shippingDetail: {
+      shipping_detail: {
          type: mongoose.Schema.Types.ObjectId,
          ref: "Shipment",
       },
@@ -54,7 +57,7 @@ const orderSchema = mongoose.Schema(
             type: Number,
          },
       },
-      shippingFee: {
+      shipping_fee: {
          type: Number,
          required: [true, "Price is required"],
       },
@@ -62,11 +65,11 @@ const orderSchema = mongoose.Schema(
          type: Number,
          required: [true, "Price is required"],
       },
-      totalPrice: {
+      total_price: {
          type: Number,
          required: [true, "Total Price is required"],
       },
-      manualUpdated: {
+      manual_updated: {
          type: Boolean,
          default: false,
       },
