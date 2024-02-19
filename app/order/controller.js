@@ -240,7 +240,7 @@ module.exports = {
 
       try {
          const order = await Order.findOne({ invoice }).populate(
-            "shippingDetail"
+            "shipping_detail"
          );
 
          if (!order) {
@@ -253,7 +253,7 @@ module.exports = {
             throw "Requested order status doesn't meet the requirement";
          }
 
-         const shippingData = transformShippingData(order.shippingDetail);
+         const shippingData = transformShippingData(order.shipping_detail);
 
          // Create Shipping order
          const { data: shippingOrder } = await axios({
@@ -264,7 +264,7 @@ module.exports = {
          });
          const { id: shipment_order_id } = shippingOrder;
 
-         // Create new Shipment from Shipping order response
+         // Update shipment data from Shipping order response
          const updateShipment = await Shipment.findOneAndUpdate(
             { reference_id: invoice },
             {
@@ -405,6 +405,100 @@ module.exports = {
          return res.status(responseData.status).send(responseData);
       } finally {
          session.endSession();
+      }
+   },
+   getOrders: async (req, res) => {
+      try {
+         // const {filter, search} = req.body
+         const { p = 0 } = req.query;
+         let options = {
+            pagination: false,
+         };
+
+         if (p) {
+            options = {
+               ...options,
+               pagination: true,
+               page: p,
+               limit: 10,
+            };
+         }
+
+         const aggregate = Order.aggregate([
+            {
+               $lookup: {
+                  from: "users",
+                  localField: "user",
+                  foreignField: "_id",
+                  as: "user",
+                  pipeline: [
+                     {
+                        $project: {
+                           name: 1,
+                           email: 1,
+                           phoneNumber: 1,
+                           avatar: 1,
+                        },
+                     },
+                  ],
+               },
+            },
+            { $unwind: "$user" },
+            {
+               $lookup: {
+                  from: "shipments",
+                  localField: "shipping_detail",
+                  foreignField: "_id",
+                  as: "shipping_detail",
+               },
+            },
+            { $unwind: "$shipping_detail" },
+            {
+               $lookup: {
+                  from: "transactions",
+                  localField: "transaction",
+                  foreignField: "_id",
+                  as: "transaction",
+               },
+            },
+            { $unwind: "$transaction" },
+            // {
+            //    $lookup: {
+            //       from: "vouchers",
+            //       localField: "voucher.voucher_id",
+            //       foreignField: "_id",
+            //       as: "voucher_detail",
+            //       pipeline: [{
+            //          voucherName: 1, conditions: 1, value: 1,
+            //       }]
+            //    },
+            // },
+            // { $unwind: "$voucher_detail" },
+         ]);
+
+         const orders = await Order.aggregatePaginate(aggregate, options);
+
+         let responseData = {
+            status: 200,
+            payload: orders,
+            message: "Successfully get all orders",
+         };
+
+         if (!orders.docs.length) {
+            responseData = {
+               status: 404,
+               message: "Order not found",
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         let responseData = {
+            status: 500,
+            message: "Internal Server Error. Order ",
+         };
+
+         return res.status(responseData.status).send(responseData);
       }
    },
 };
