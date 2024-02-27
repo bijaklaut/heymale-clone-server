@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-aggregate-paginate-v2");
 
 const shipmentSchema = mongoose.Schema(
    {
@@ -46,6 +47,15 @@ const shipmentSchema = mongoose.Schema(
                type: Number,
             },
          },
+         province: {
+            type: String,
+         },
+         city: {
+            type: String,
+         },
+         district: {
+            type: String,
+         },
       },
       destination: {
          contact_name: {
@@ -64,6 +74,15 @@ const shipmentSchema = mongoose.Schema(
             type: String,
          },
          postal_code: {
+            type: String,
+         },
+         province: {
+            type: String,
+         },
+         city: {
+            type: String,
+         },
+         district: {
             type: String,
          },
          coordinate: {
@@ -117,6 +136,22 @@ const shipmentSchema = mongoose.Schema(
          company: {
             type: String,
          },
+         history: [
+            {
+               service_type: {
+                  type: String,
+               },
+               status: {
+                  type: String,
+               },
+               note: {
+                  type: String,
+               },
+               updated_at: {
+                  type: String,
+               },
+            },
+         ],
          name: {
             type: String,
          },
@@ -217,5 +252,7 @@ const shipmentSchema = mongoose.Schema(
    },
    { timestamps: true }
 );
+
+shipmentSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Shipment", shipmentSchema);
