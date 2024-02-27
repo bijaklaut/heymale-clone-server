@@ -238,6 +238,41 @@ module.exports = {
          });
       }
    },
+   getAddressByUser: async (req, res) => {
+      try {
+         const { user } = req.body;
+         const addresses = await Address.find({ user: user });
+
+         let responseData = {
+            status: 200,
+            payload: addresses,
+            message: "Get user addresses successful",
+         };
+
+         if (!addresses) {
+            responseData = {
+               status: 404,
+               message: "User addresses not found",
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         let responseData = {
+            status: 500,
+            message: "Internal Server Error",
+         };
+
+         if (error) {
+            responseData = {
+               ...responseData,
+               error_detail: error,
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      }
+   },
    testQuery: async (req, res) => {
       try {
          // const {
