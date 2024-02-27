@@ -226,6 +226,9 @@ const generateShippingData = (shipping, invoice, shippingItems) => {
          address: shipping.address.destination_address,
          postal_code: shipping.address.destination_postal_code,
          area_id: shipping.address.destination_area_id,
+         province: shipping.address.destination_province,
+         city: shipping.address.destination_city,
+         district: shipping.address.destination_district,
          note: shipping.address.destination_note,
       },
       courier: {
