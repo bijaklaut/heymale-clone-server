@@ -57,11 +57,11 @@ module.exports = {
          );
 
          // When new Transaction created, reduce product stock and voucher quota
-         const bulkResult = await Product.bulkWrite(bulkOperations, {
+         await Product.bulkWrite(bulkOperations, {
             session,
          });
 
-         const appliedVoucher = await Voucher.updateOne(
+         await Voucher.updateOne(
             { _id: voucher._id },
             { $inc: { voucherQuota: -1 } },
             { session }
@@ -495,8 +495,15 @@ module.exports = {
       } catch (error) {
          let responseData = {
             status: 500,
-            message: "Internal Server Error. Order ",
+            message: "Internal Server Error",
          };
+
+         if (error.message) {
+            responseData = {
+               status: 400,
+               message: error.message,
+            };
+         }
 
          return res.status(responseData.status).send(responseData);
       }
