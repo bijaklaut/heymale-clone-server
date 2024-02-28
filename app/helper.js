@@ -111,16 +111,12 @@ const orderItemsAction = (orderItems) => {
 
    return { newOrderItems, transactionItems, bulkOperations, shippingItems };
 };
-const generatePaymentData = (
-   customer,
-   transactionItems,
-   invoice,
-   itemsPrice,
-   reqbody
-) => {
-   const { shipping, payment, voucher } = reqbody;
+const generatePaymentData = (customer, transactionItems, invoice, reqbody) => {
+   const { shipping, payment, voucher, subtotal, total } = reqbody;
    const voucherValue = voucher ? voucher.value : 0;
-   const totalPrice = itemsPrice + shipping.price - voucherValue;
+   const totalPrice = subtotal + shipping.price - voucherValue;
+
+   if (total !== totalPrice) throw "Incorrect Order Total";
 
    let miscFee = {
       name: "Misc Fee",
