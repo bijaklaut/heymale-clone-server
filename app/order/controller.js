@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
 const Product = require("../product/model");
 const Transaction = require("../transaction/model");
 const Shipment = require("../shipment/model");
@@ -30,7 +31,9 @@ module.exports = {
       const session = await mongoose.startSession();
       session.startTransaction();
 
-      const { user, orderItems, voucher, shipping } = req.body;
+      const token = req.headers.authorization.split(" ")[1];
+      const { id } = jwt.decode(token);
+      const { orderItems, voucher, shipping } = req.body;
       const invoice = await generateInvoice();
       const coreApi = new midtransClient.CoreApi({
          isProduction: false,
@@ -39,8 +42,7 @@ module.exports = {
       });
 
       try {
-         const customer = await User.findOne({ _id: user });
-         const itemsPrice = orderItems.reduce(getItemPrice, 0);
+         const customer = await User.findOne({ _id: id });
          let {
             transactionItems,
             bulkOperations,
@@ -52,7 +54,6 @@ module.exports = {
             customer,
             transactionItems,
             invoice,
-            itemsPrice,
             req.body
          );
 
@@ -61,11 +62,13 @@ module.exports = {
             session,
          });
 
-         await Voucher.updateOne(
-            { _id: voucher._id },
-            { $inc: { voucherQuota: -1 } },
-            { session }
-         );
+         if (voucher.voucher_id) {
+            await Voucher.updateOne(
+               { _id: voucher._id },
+               { $inc: { voucherQuota: -1 } },
+               { session }
+            );
+         }
 
          // Create Payment API
          const paymentCharge = await coreApi.charge(paymentData);
@@ -104,21 +107,17 @@ module.exports = {
 
          return res.status(200).send({
             paymentCharge,
-            newTransaction,
-            newShipment,
-            newOrder,
          });
       } catch (error) {
          await session.abortTransaction();
 
          // Probably unnecessary action
-         const cancelPaymentResult = await cancelPayment(invoice);
+         // const cancelPaymentResult = await cancelPayment(invoice);
 
          let responseData = {
-            status: 400,
-            message: "Failed to create order",
+            status: 500,
+            message: "Internal Server Error",
             error_details: error,
-            cancelPaymentResult,
          };
 
          if (error.message.includes("Midtrans")) {
