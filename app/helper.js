@@ -1,6 +1,7 @@
 const axios = require("axios").default;
 const { midBaseURLDev, midServerDev } = require("../config");
 const Transaction = require("./transaction/model");
+const Token = require("./token/model");
 
 const getTodayDate = (forShipment = false) => {
    let today = new Date();
@@ -21,6 +22,7 @@ const getTodayDate = (forShipment = false) => {
 
    return `${year}-${month}-${date}`;
 };
+
 const generateInvoice = async () => {
    const today = new Date();
    const fullDate = getTodayDate(false).split("-").join("");
@@ -42,6 +44,7 @@ const generateInvoice = async () => {
 
    return newInvoice;
 };
+
 const getItemPrice = (total, item) => {
    let itemQty = 0;
 
@@ -51,6 +54,7 @@ const getItemPrice = (total, item) => {
 
    return total + item.price * itemQty;
 };
+
 const orderItemsAction = (orderItems) => {
    let newOrderItems = [];
    let transactionItems = [];
@@ -111,6 +115,7 @@ const orderItemsAction = (orderItems) => {
 
    return { newOrderItems, transactionItems, bulkOperations, shippingItems };
 };
+
 const generatePaymentData = (customer, transactionItems, invoice, reqbody) => {
    const { shipping, payment, voucher, subtotal, total } = reqbody;
    const voucherValue = voucher ? voucher.value : 0;
@@ -200,6 +205,7 @@ const generatePaymentData = (customer, transactionItems, invoice, reqbody) => {
 
    return paymentData;
 };
+
 const generateShippingData = (shipping, invoice, shippingItems) => {
    const data = {
       order_id: null,
@@ -247,13 +253,15 @@ const generateShippingData = (shipping, invoice, shippingItems) => {
 
    return data;
 };
+
 const generateOrderData = (
+   user,
    newOrderItems,
    newTransaction,
    reqbody,
    shipping_id
 ) => {
-   const { user, voucher, shipping } = reqbody;
+   const { voucher, shipping } = reqbody;
 
    const orderData = {
       invoice: newTransaction.order_id,
@@ -270,6 +278,7 @@ const generateOrderData = (
 
    return orderData;
 };
+
 const cancelPayment = async (order_id) => {
    const encodedKey = Buffer.from(midServerDev).toString("base64");
    const checkPayment = await axios({
@@ -295,6 +304,7 @@ const cancelPayment = async (order_id) => {
 
    return checkPayment.data;
 };
+
 const transformShippingData = (shipping) => {
    const data = {
       shipper_contact_name: shipping.shipper.name,
@@ -326,6 +336,28 @@ const transformShippingData = (shipping) => {
    return data;
 };
 
+const generateRefreshToken = async () => {
+   const today = new Date();
+   const fullDate = getTodayDate(false).split("-").join("");
+   const hours =
+      today.getHours() < 10 ? `0${today.getHours()}` : today.getHours();
+   const minutes =
+      today.getMinutes() < 10 ? `0${today.getMinutes()}` : today.getMinutes();
+   const seconds =
+      today.getSeconds() < 10 ? `0${today.getSeconds()}` : today.getSeconds();
+   let newRefresh = `RESTRICT${fullDate}${hours}${minutes}${seconds}`;
+
+   const checkToken = await Token.find({
+      refresh_token: { $regex: newRefresh },
+   });
+
+   if (checkToken.length) {
+      return `${newRefresh}${checkToken.length}`;
+   }
+
+   return newRefresh;
+};
+
 module.exports = {
    getTodayDate,
    generateInvoice,
@@ -336,4 +368,5 @@ module.exports = {
    generateOrderData,
    cancelPayment,
    transformShippingData,
+   generateRefreshToken,
 };
