@@ -8,6 +8,8 @@ const {
    updateUser,
    updatePassword,
    authSignin,
+   authRefresh,
+   authSignOut,
 } = require("./controller");
 const { multerMiddleware, upload } = require("./multer-config");
 const { isLogin } = require("../middleware/auth");
@@ -36,5 +38,7 @@ router.put(
 
 // Auth
 router.post("/signin", multerMiddleware(upload.none()), authSignin);
+router.post("/refresh", authRefresh);
+router.post("/signout", authSignOut);
 
 module.exports = router;

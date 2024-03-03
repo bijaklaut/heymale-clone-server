@@ -13,4 +13,6 @@ module.exports = {
    biteshipBaseURL: process.env.BITESHIP_BASEURL,
    biteshipTestToken: process.env.BITESHIP_TEST_TOKEN,
    biteshipSignature: process.env.BITESHIP_WEBHOOKS_SIGNATURE,
+   EXPIRED_ACCESS: 1000 * 60 * 15, // 15 MINUTES
+   EXPIRED_REFRESH: 1000 * 60 * 60 * 24 * 14, // 14 DAYS
 };
