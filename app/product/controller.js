@@ -259,8 +259,8 @@ module.exports = {
             }
          });
       } catch (error) {
-         res.status(400).send({
-            status: 400,
+         res.status(500).send({
+            status: 500,
             payload: null,
             message: "Failed to delete product",
             errorDetail: error,
