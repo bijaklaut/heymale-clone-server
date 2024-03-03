@@ -1,7 +1,4 @@
-const { default: mongoose } = require("mongoose");
 const Cart = require("./model");
-const Product = require("../product/model");
-const ObjectId = mongoose.Types.ObjectId;
 
 module.exports = {
    postCart: async (req, res) => {
@@ -86,6 +83,35 @@ module.exports = {
                message: error.message,
             };
          }
+
+         return res.status(responseData.status).send(responseData);
+      }
+   },
+   emptyCart: async (req, res) => {
+      try {
+         const { user } = req.params;
+         const cart = await Cart.findOneAndDelete({ user: user });
+
+         let responseData = {
+            status: 200,
+            message: "Cart has been deleted",
+            payload: cart,
+         };
+
+         if (!cart) {
+            responseData = {
+               status: 404,
+               message: "Cart not found",
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         let responseData = {
+            status: 500,
+            message: "Internal Server Error",
+            error_detail: error,
+         };
 
          return res.status(responseData.status).send(responseData);
       }
