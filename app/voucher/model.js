@@ -74,6 +74,7 @@ const voucherSchema = mongoose.Schema({
    },
    voucherQuota: {
       type: Number,
+      min: [0, "Quota minimum value is 0"],
       required: [true, "Voucher Quota is required"],
    },
 });

@@ -8,9 +8,8 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault,
@@ -30,9 +29,8 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault: isFirst ? true : asDefault,
@@ -131,25 +129,18 @@ module.exports = {
             addressLabel,
             recipientName,
             address,
-            province,
-            city,
-            district,
-            postcode,
+            addressNote,
+            addressArea,
             phone,
             user,
             asDefault,
          } = req.body;
 
          if (asDefault) {
-            const checkAddress = await Address.findOne({
-               user,
-               asDefault: true,
-            });
-
-            if (checkAddress) {
-               checkAddress.asDefault = false;
-               await checkAddress.save();
-            }
+            await Address.findOneAndUpdate(
+               { $and: [{ user: user }, { asDefault: true }] },
+               { asDefault: false }
+            );
          }
 
          const updateAddress = await Address.findByIdAndUpdate(
@@ -158,10 +149,8 @@ module.exports = {
                addressLabel,
                recipientName,
                address,
-               province,
-               city,
-               district,
-               postcode,
+               addressNote,
+               addressArea,
                phone,
                user,
                asDefault,
@@ -247,6 +236,41 @@ module.exports = {
             message: "Failed to delete address",
             errorDetail: error,
          });
+      }
+   },
+   getAddressByUser: async (req, res) => {
+      try {
+         const { user } = req.body;
+         const addresses = await Address.find({ user: user });
+
+         let responseData = {
+            status: 200,
+            payload: addresses,
+            message: "Get user addresses successful",
+         };
+
+         if (!addresses) {
+            responseData = {
+               status: 404,
+               message: "User addresses not found",
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         let responseData = {
+            status: 500,
+            message: "Internal Server Error",
+         };
+
+         if (error) {
+            responseData = {
+               ...responseData,
+               error_detail: error,
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
       }
    },
    testQuery: async (req, res) => {

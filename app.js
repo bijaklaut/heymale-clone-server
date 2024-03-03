@@ -13,6 +13,10 @@ const productRouter = require("./app/product/router");
 const userRouter = require("./app/user/router");
 const addressRouter = require("./app/address/router");
 const voucherRouter = require("./app/voucher/router");
+const orderRouter = require("./app/order/router");
+const transactionRouter = require("./app/transaction/router");
+const shipmentRouter = require("./app/shipment/router");
+const cartRouter = require("./app/cart/router");
 
 const apiVer = "/api/v1";
 
@@ -31,6 +35,10 @@ app.use(`${apiVer}/product`, productRouter);
 app.use(`${apiVer}/user`, userRouter);
 app.use(`${apiVer}/address`, addressRouter);
 app.use(`${apiVer}/voucher`, voucherRouter);
+app.use(`${apiVer}/order`, orderRouter);
+app.use(`${apiVer}/transaction`, transactionRouter);
+app.use(`${apiVer}/shipment`, shipmentRouter);
+app.use(`${apiVer}/cart`, cartRouter);
 
 app.use((req, res, next) => {
    res.status(404).send({

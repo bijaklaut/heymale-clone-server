@@ -297,4 +297,109 @@ module.exports = {
          });
       }
    },
+   getAvailableVoucher: async (req, res) => {
+      try {
+         const today = new Date();
+
+         let options = {
+            pagination: false,
+         };
+
+         const aggregate = Voucher.aggregate([
+            {
+               $match: {
+                  status: "Active",
+                  validUntil: { $gte: today },
+                  voucherQuota: { $gte: 1 },
+               },
+            },
+            {
+               $lookup: {
+                  from: "categories",
+                  let: { localCategory: "$validCategories" },
+                  pipeline: [
+                     {
+                        $match: {
+                           $expr: {
+                              $in: ["$_id", "$$localCategory"],
+                           },
+                        },
+                     },
+                  ],
+                  as: "validCategories",
+               },
+            },
+            {
+               $lookup: {
+                  from: "products",
+                  let: { localProduct: "$validProducts" },
+                  pipeline: [
+                     {
+                        $match: {
+                           $expr: {
+                              $in: ["$_id", "$$localProduct"],
+                           },
+                        },
+                     },
+                     {
+                        $lookup: {
+                           from: "categories",
+                           localField: "category",
+                           foreignField: "_id",
+                           as: "category",
+                        },
+                     },
+                     {
+                        $unwind: "$category",
+                     },
+                  ],
+                  as: "validProducts",
+               },
+            },
+            {
+               $set: {
+                  validUntil: {
+                     $dateToString: { format: "%Y-%m-%d", date: "$validUntil" },
+                  },
+               },
+            },
+         ]);
+         const vouchers = await Voucher.aggregatePaginate(aggregate, options);
+         let responseData = {
+            status: 200,
+            message: "Get user cart successfully",
+            payload: vouchers,
+         };
+
+         if (!vouchers) {
+            responseData = {
+               status: 404,
+               message: "User cart not found",
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      } catch (error) {
+         let responseData = {
+            status: 500,
+            message: "Internal Server Error",
+         };
+
+         if (error) {
+            responseData = {
+               ...responseData,
+               error_detail: error,
+            };
+         }
+
+         if (error.message) {
+            responseData = {
+               ...responseData,
+               message: error.message,
+            };
+         }
+
+         return res.status(responseData.status).send(responseData);
+      }
+   },
 };

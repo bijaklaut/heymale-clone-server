@@ -1,8 +1,15 @@
 const User = require("./model");
+const Token = require("../token/model");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { rootPath, jwtKey } = require("../../config");
+const {
+   rootPath,
+   jwtKey,
+   EXPIRED_ACCESS,
+   EXPIRED_REFRESH,
+} = require("../../config");
+const { generateRefreshToken } = require("../helper");
 
 module.exports = {
    createUser: async (req, res) => {
@@ -353,26 +360,140 @@ module.exports = {
                },
             });
 
-         const token = jwt.sign(
+         const plainRefresh = await generateRefreshToken();
+
+         // Refresh Token Expire Date - 14 Days (MUST MATCH WITH EXPIRED_REFRESH)
+         let today = new Date();
+         const expireDate = today.getDate() + 14;
+         today.setDate(expireDate);
+
+         const newTokenModel = await new Token({
+            user: user._id,
+            refresh_token: plainRefresh,
+            expire_date: today.toISOString(),
+         }).save();
+
+         const accessToken = jwt.sign(
             {
                id: user._id,
             },
             jwtKey,
-            { expiresIn: "24h" }
+            { expiresIn: EXPIRED_ACCESS }
          );
+
+         const refreshToken = jwt.sign(
+            {
+               id: newTokenModel._id,
+               refresh_token: plainRefresh,
+            },
+            jwtKey,
+            { expiresIn: EXPIRED_REFRESH }
+         );
+
+         res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 5,
+         });
+
+         res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 5,
+         });
 
          return res.status(200).send({
             status: 200,
-            payload: token,
             message: `Welcome, ${user.name}!`,
-            errorDetail: null,
          });
       } catch (error) {
          res.status(500).send({
             status: 500,
-            payload: null,
             message: "Internal Server Error",
             errorDetail: error,
+         });
+      }
+   },
+   authRefresh: async (req, res) => {
+      try {
+         const { refreshToken } = req.cookies;
+         const today = new Date();
+
+         if (!refreshToken)
+            return res
+               .status(400)
+               .send({ message: "Unauthorized. No Token Provided" });
+
+         const { id, refresh_token } = jwt.decode(refreshToken);
+
+         const getToken = await Token.findOne({
+            _id: id,
+            expire_date: { $gte: today },
+         });
+
+         const isValid = await bcrypt.compare(
+            refresh_token,
+            getToken.refresh_token
+         );
+
+         if (!isValid) {
+            return res
+               .status(400)
+               .send({ message: "Unauthorized. User is not verified" });
+         }
+
+         const accessToken = jwt.sign(
+            {
+               id: getToken.user,
+            },
+            jwtKey,
+            { expiresIn: EXPIRED_ACCESS }
+         );
+
+         res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 5,
+         });
+
+         res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 5,
+         });
+
+         return res.status(200).send({
+            status: 200,
+            message: "Successfully retrieved new token",
+         });
+      } catch (error) {
+         return res.status(500).send({
+            status: 500,
+            message: "Internal Server Error",
+            error_detail: error,
+         });
+      }
+   },
+   authSignOut: async (req, res) => {
+      try {
+         const { refreshToken } = req.cookies;
+
+         if (!refreshToken)
+            return res
+               .status(400)
+               .send({ message: "Unauthorized. No Token Provided" });
+
+         const { id } = jwt.decode(refreshToken);
+
+         await Token.findOneAndDelete({
+            _id: id,
+         });
+
+         return res.status(200).send({
+            status: 200,
+            message: "Successfully signed out",
+         });
+      } catch (error) {
+         return res.status(500).send({
+            status: 500,
+            message: "Internal Server Error",
+            error_detail: error,
          });
       }
    },

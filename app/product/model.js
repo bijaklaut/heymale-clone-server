@@ -18,21 +18,25 @@ const productSchema = mongoose.Schema(
       variant: {
          s: {
             type: Number,
+            min: [0, "Variant minimum value is 0"],
             default: 0,
             required: [true, "Product variant is required"],
          },
          m: {
             type: Number,
+            min: [0, "Variant minimum value is 0"],
             default: 0,
             required: [true, "Product variant is required"],
          },
          l: {
             type: Number,
+            min: [0, "Variant minimum value is 0"],
             default: 0,
             required: [true, "Product variant is required"],
          },
          xl: {
             type: Number,
+            min: [0, "Variant minimum value is 0"],
             default: 0,
             required: [true, "Product variant is required"],
          },
