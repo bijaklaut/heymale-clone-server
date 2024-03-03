@@ -6,13 +6,14 @@ const {
    createShippingOrder,
    shipmentHooks,
    getOrders,
+   getOrderDetail,
 } = require("./controller");
 const { isLogin } = require("../middleware/auth");
 const multer = require("multer");
 const upload = multer();
 
 router.post("/", upload.none(), getOrders);
-
+router.get("/:invoice", upload.none(), isLogin, getOrderDetail);
 router.post("/create", upload.none(), isLogin, createOrder);
 router.post("/paymenthooks", upload.none(), paymentHooks);
 router.post("/shipping", upload.none(), createShippingOrder);

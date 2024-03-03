@@ -93,6 +93,7 @@ module.exports = {
          await newShipment.save({ session });
 
          const newOrderData = generateOrderData(
+            id,
             newOrderItems,
             newTransaction,
             req.body,
@@ -105,9 +106,13 @@ module.exports = {
          await session.commitTransaction();
          session.endSession();
 
-         return res.status(200).send({
-            paymentCharge,
-         });
+         let responseData = {
+            status: 201,
+            message: "Successfully placed order",
+            payload: paymentCharge.order_id,
+         };
+
+         return res.status(responseData.status).send(responseData);
       } catch (error) {
          await session.abortTransaction();
 
@@ -122,7 +127,6 @@ module.exports = {
 
          if (error.message.includes("Midtrans")) {
             responseData = {
-               ...responseData,
                status: Number(error.httpStatusCode),
                error_details: error.ApiResponse,
                message: `Failed to process order payment. Please try again later (${error.httpStatusCode})`,
@@ -131,7 +135,6 @@ module.exports = {
 
          if (error.name == "ValidationError") {
             responseData = {
-               ...responseData,
                status: 409,
                error_details: error.errors,
                message: error.name,
@@ -141,7 +144,6 @@ module.exports = {
          if (error.code === 11000) {
             const key = Object.keys(error.keyValue)[0];
             responseData = {
-               ...responseData,
                status: 409,
                message: `Got problem on field ${key}`,
                error_details: error,
@@ -506,5 +508,85 @@ module.exports = {
 
          return res.status(responseData.status).send(responseData);
       }
+   },
+   getOrderDetail: async (req, res) => {
+      try {
+         try {
+            const { invoice } = req.params;
+            const order = await Order.aggregate([
+               { $match: { invoice: invoice } },
+               {
+                  $lookup: {
+                     from: "transactions",
+                     localField: "transaction",
+                     foreignField: "_id",
+                     as: "transaction",
+                  },
+               },
+               { $unwind: "$transaction" },
+               {
+                  $lookup: {
+                     from: "shipments",
+                     localField: "shipping_detail",
+                     foreignField: "_id",
+                     as: "shipping_detail",
+                  },
+               },
+               { $unwind: "$shipping_detail" },
+               {
+                  $lookup: {
+                     from: "vouchers",
+                     // localField: "voucher",
+                     // foreignField: "_id",
+                     let: { voucher_id: "voucher.voucher_id" },
+                     pipeline: [
+                        {
+                           $match: {
+                              $expr: {
+                                 $cond: [
+                                    { $ne: ["$$voucher_id", ""] },
+                                    { $eq: ["$$voucher_id", "$_id"] },
+                                    {},
+                                 ],
+                              },
+                           },
+                        },
+                     ],
+                     as: "voucher_detail",
+                  },
+               },
+               // { $unwind: "$voucher" },
+            ]);
+
+            let responseData = {
+               status: 200,
+               payload: order[0],
+               message: "Successfully get order detail",
+            };
+
+            if (!order.length) {
+               responseData = {
+                  status: 404,
+                  message: "Order not found",
+               };
+            }
+
+            return res.status(responseData.status).send(responseData);
+         } catch (error) {
+            let responseData = {
+               status: 500,
+               message: "Internal Server Error",
+            };
+
+            if (error.message) {
+               responseData = {
+                  status: 400,
+                  message: error.message,
+               };
+            }
+
+            return res.status(responseData.status).send(responseData);
+         }
+      } catch (error) {}
    },
 };
