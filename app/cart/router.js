@@ -1,5 +1,4 @@
 const express = require("express");
-const { isLogin } = require("../middleware/auth");
 const router = express.Router();
 const multer = require("multer");
 const { postCart, getUserCart, emptyCart } = require("./controller");
