@@ -330,14 +330,14 @@ module.exports = {
       }
    },
    shipmentHooks: async (req, res) => {
-      const shipmentReq = req.body;
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
-      if (req.headers["bts-signature"] !== BITESHIP_WEBHOOKS_SIGNATURE)
-         throw "Signature key invalid. Request denied";
-
       try {
+         const shipmentReq = req.body;
+         const session = await mongoose.startSession();
+         session.startTransaction();
+
+         if (req.headers["bts-signature"] !== BITESHIP_WEBHOOKS_SIGNATURE)
+            throw "Signature key invalid. Request denied";
+
          let responseData = {
             status: 200,
          };
