@@ -359,12 +359,20 @@ module.exports = {
                { session, new: true, runValidation: true }
             );
 
+            await Order.findOneAndUpdate(
+               {
+                  invoice: updateShipment.reference_id,
+               },
+               { status: shipmentReq.status },
+               { session, runValidation: true }
+            );
+
             responseData = {
                status: 201,
                updateShipment,
             };
          }
-         if (shipmentReq.event === "order.waybill_id") {
+         if (shipmentReq.event === "order.price") {
             const updateShipment = await Shipment.findOneAndUpdate(
                { shipment_order_id: shipmentReq.order_id },
                {
@@ -385,7 +393,7 @@ module.exports = {
                updateShipment,
             };
          }
-         if (shipmentReq.event === "order.price") {
+         if (shipmentReq.event === "order.waybill_id") {
             const updateShipment = await Shipment.findOneAndUpdate(
                { shipment_order_id: shipmentReq.order_id },
                {
