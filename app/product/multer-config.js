@@ -1,8 +1,8 @@
 const multer = require("multer");
-const { rootPath } = require("../../config");
+const { ROOT_PATH } = require("../../config");
 const storage = multer.diskStorage({
    destination: (req, file, cb) => {
-      cb(null, `${rootPath}/public/upload/product`);
+      cb(null, `${ROOT_PATH}/public/upload/product`);
    },
    filename: (req, file, cb) => {
       const split = file.originalname.split(".");

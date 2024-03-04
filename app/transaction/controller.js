@@ -1,4 +1,7 @@
-const { midServerDev, midBaseURLDev } = require("../../config");
+const {
+   MIDTRANS_SERVERKEY_SBOX,
+   MIDTRANS_BASEURL_SBOX,
+} = require("../../config");
 const Transaction = require("./model");
 const axios = require("axios").default;
 
@@ -81,11 +84,11 @@ module.exports = {
    cancelTransaction: async (req, res) => {
       try {
          const { order_id } = req.params;
-         const url = `${midBaseURLDev}/v2/${order_id}/cancel`;
+         const url = `${MIDTRANS_BASEURL_SBOX}/v2/${order_id}/cancel`;
 
          const request = await axios({
             url,
-            auth: { username: midServerDev, password: "" },
+            auth: { username: MIDTRANS_SERVERKEY_SBOX, password: "" },
             method: "POST",
          });
 

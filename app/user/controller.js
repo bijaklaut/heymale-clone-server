@@ -4,8 +4,8 @@ const fs = require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const {
-   rootPath,
-   jwtKey,
+   ROOT_PATH,
+   SECRET_KEY,
    EXPIRED_ACCESS,
    EXPIRED_REFRESH,
 } = require("../../config");
@@ -191,7 +191,7 @@ module.exports = {
          );
 
          if (updateUser) {
-            const deletePath = `${rootPath}/public/upload/user/${oldUser.avatar}`;
+            const deletePath = `${ROOT_PATH}/public/upload/user/${oldUser.avatar}`;
 
             if (fs.existsSync(deletePath) && req.file) {
                fs.unlinkSync(deletePath);
@@ -247,7 +247,7 @@ module.exports = {
          const result = await User.findOneAndDelete({ _id: id });
 
          if (result) {
-            const deletePath = `${rootPath}/public/upload/user/${avatar}`;
+            const deletePath = `${ROOT_PATH}/public/upload/user/${avatar}`;
 
             if (fs.existsSync(deletePath) && avatar) {
                fs.unlinkSync(deletePath);
@@ -377,7 +377,7 @@ module.exports = {
             {
                id: user._id,
             },
-            jwtKey,
+            SECRET_KEY,
             { expiresIn: EXPIRED_ACCESS }
          );
 
@@ -386,7 +386,7 @@ module.exports = {
                id: newTokenModel._id,
                refresh_token: plainRefresh,
             },
-            jwtKey,
+            SECRET_KEY,
             { expiresIn: EXPIRED_REFRESH }
          );
 
@@ -444,7 +444,7 @@ module.exports = {
             {
                id: getToken.user,
             },
-            jwtKey,
+            SECRET_KEY,
             { expiresIn: EXPIRED_ACCESS }
          );
 

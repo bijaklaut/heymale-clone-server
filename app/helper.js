@@ -1,5 +1,5 @@
 const axios = require("axios").default;
-const { midBaseURLDev, midServerDev } = require("../config");
+const { MIDTRANS_BASEURL_SBOX, MIDTRANS_SERVERKEY_SBOX } = require("../config");
 const Transaction = require("./transaction/model");
 const Token = require("./token/model");
 
@@ -280,10 +280,10 @@ const generateOrderData = (
 };
 
 const cancelPayment = async (order_id) => {
-   const encodedKey = Buffer.from(midServerDev).toString("base64");
+   const encodedKey = Buffer.from(MIDTRANS_SERVERKEY_SBOX).toString("base64");
    const checkPayment = await axios({
       method: "GET",
-      url: `${midBaseURLDev}/v2/${order_id}/status`,
+      url: `${MIDTRANS_BASEURL_SBOX}/v2/${order_id}/status`,
       headers: {
          accept: "application/json",
          Authorization: `Basic ${encodedKey}`,
@@ -293,7 +293,7 @@ const cancelPayment = async (order_id) => {
    if (checkPayment.data.status_code == 200) {
       const result = await axios({
          method: "POST",
-         url: `${midBaseURLDev}/v2/${order_id}/cancel`,
+         url: `${MIDTRANS_BASEURL_SBOX}/v2/${order_id}/cancel`,
          headers: {
             accept: "application/json",
             Authorization: `Basic ${encodedKey}`,

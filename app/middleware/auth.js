@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const config = require("../../config");
+const { SECRET_KEY } = require("../../config");
 
 module.exports = {
    isLogin: async (req, res, next) => {
@@ -8,7 +8,7 @@ module.exports = {
          const token = req.headers.authorization.split(" ")[1];
 
          if (token) {
-            const verify = jwt.verify(token, config.jwtKey);
+            const verify = jwt.verify(token, SECRET_KEY);
 
             if (verify) next();
          }

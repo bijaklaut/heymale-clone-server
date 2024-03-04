@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const { databaseUrl } = require("../config");
+const { DATABASE_URL } = require("../config");
 
-mongoose.connect(databaseUrl);
+mongoose.connect(DATABASE_URL);
 
 const database = mongoose.connection;
 

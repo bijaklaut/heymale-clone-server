@@ -1,6 +1,6 @@
 const Product = require("./model");
 const fs = require("fs");
-const { rootPath } = require("../../config");
+const { ROOT_PATH } = require("../../config");
 
 module.exports = {
    getProducts: async (req, res) => {
@@ -182,12 +182,12 @@ module.exports = {
          ).then((result) => {
             if (
                fs.existsSync(
-                  `${rootPath}/public/upload/product/${oldProduct.thumbnail}`
+                  `${ROOT_PATH}/public/upload/product/${oldProduct.thumbnail}`
                ) &&
                req.file
             ) {
                fs.unlinkSync(
-                  `${rootPath}/public/upload/product/${oldProduct.thumbnail}`
+                  `${ROOT_PATH}/public/upload/product/${oldProduct.thumbnail}`
                );
             }
             res.status(201).send({
@@ -236,7 +236,7 @@ module.exports = {
 
          Product.findOneAndDelete({ _id: id }).then((result) => {
             if (result) {
-               const deletePath = `${rootPath}/public/upload/product/${thumbnail}`;
+               const deletePath = `${ROOT_PATH}/public/upload/product/${thumbnail}`;
 
                if (fs.existsSync(deletePath) && thumbnail) {
                   fs.unlinkSync(deletePath);
