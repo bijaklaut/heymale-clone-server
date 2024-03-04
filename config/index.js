@@ -10,7 +10,7 @@ module.exports = {
    midBaseURLDev: process.env.MID_SANDBOX,
    midClientDev: process.env.MID_SANDBOX_CLIENT,
    midServerDev: process.env.MID_SANDBOX_SERVER,
-   biteshipBaseURL: process.env.BITESHIP_BASEURL,
+   BITESHIP_BASEURL: process.env.BITESHIP_BASEURL,
    biteshipTestToken: process.env.BITESHIP_TEST_TOKEN,
    biteshipSignature: process.env.BITESHIP_WEBHOOKS_SIGNATURE,
    EXPIRED_ACCESS: 1000 * 60 * 15, // 15 MINUTES
