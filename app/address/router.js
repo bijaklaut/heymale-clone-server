@@ -18,7 +18,6 @@ router.post("/create", isLogin, upload.none(), createAddress);
 router.get("/detail/:id", isLogin, addressDetail);
 router.put("/update/:id", isLogin, upload.none(), updateAddress);
 router.delete("/:id", isLogin, deleteAddress);
-router.post("/testquery/:id", isLogin, upload.none(), testQuery);
 router.post("/byuser", isLogin, upload.none(), getAddressByUser);
 
 module.exports = router;
