@@ -7,11 +7,11 @@ const Order = require("./model");
 const User = require("../user/model");
 const Voucher = require("../voucher/model");
 const {
-   midServerDev,
-   midClientDev,
-   biteshipBaseURL,
-   biteshipTestToken,
-   biteshipSignature,
+   MIDTRANS_SERVERKEY_SBOX,
+   MIDTRANS_CLIENTKEY_SBOX,
+   BITESHIP_TEST_TOKEN,
+   BITESHIP_WEBHOOKS_SIGNATURE,
+   BITESHIP_BASEURL,
 } = require("../../config");
 const midtransClient = require("midtrans-client");
 const {
@@ -37,8 +37,8 @@ module.exports = {
       const invoice = await generateInvoice();
       const coreApi = new midtransClient.CoreApi({
          isProduction: false,
-         serverKey: midServerDev,
-         clientKey: midClientDev,
+         serverKey: MIDTRANS_SERVERKEY_SBOX,
+         clientKey: MIDTRANS_CLIENTKEY_SBOX,
       });
 
       try {
@@ -161,8 +161,8 @@ module.exports = {
 
       const apiClient = new midtransClient.CoreApi({
          isProduction: false,
-         serverKey: midServerDev,
-         clientKey: midClientDev,
+         serverKey: MIDTRANS_SERVERKEY_SBOX,
+         clientKey: MIDTRANS_CLIENTKEY_SBOX,
       });
 
       const notificationJson = req.body;
@@ -234,7 +234,7 @@ module.exports = {
    },
    createShippingOrder: async (req, res) => {
       const { invoice } = req.body;
-      const shippingOrderURL = `${biteshipBaseURL}/v1/orders`;
+      const shippingOrderURL = `${BITESHIP_BASEURL}/v1/orders`;
 
       const session = await mongoose.startSession();
       session.startTransaction();
@@ -260,13 +260,13 @@ module.exports = {
          const { data: shippingOrder } = await axios({
             url: shippingOrderURL,
             method: "POST",
-            headers: { Authorization: `Bearer ${biteshipTestToken}` },
+            headers: { Authorization: `Bearer ${BITESHIP_TEST_TOKEN}` },
             data: shippingData,
          });
-         const { id: shipment_order_id } = shippingOrder;
+         const { id: shipment_order_id, status } = shippingOrder;
 
          // Update shipment data from Shipping order response
-         const updateShipment = await Shipment.findOneAndUpdate(
+         await Shipment.findOneAndUpdate(
             { reference_id: invoice },
             {
                ...shippingOrder,
@@ -275,10 +275,20 @@ module.exports = {
             { new: true, runValidation: true, session }
          );
 
+         await Order.findOneAndUpdate(
+            { invoice },
+            { status },
+            { runValidation: true, session }
+         );
+
          await session.commitTransaction();
-         return res
-            .status(200)
-            .send({ shippingOrder, updateShipment, shippingData, order });
+
+         let responseData = {
+            status: 200,
+            message: "Shipping order successfully created",
+         };
+
+         return res.status(responseData.status).send(responseData);
       } catch (error) {
          await session.abortTransaction();
          let responseData = {
@@ -324,7 +334,7 @@ module.exports = {
       const session = await mongoose.startSession();
       session.startTransaction();
 
-      if (req.headers["bts-signature"] !== biteshipSignature)
+      if (req.headers["bts-signature"] !== BITESHIP_WEBHOOKS_SIGNATURE)
          throw "Signature key invalid. Request denied";
 
       try {
@@ -410,8 +420,30 @@ module.exports = {
    },
    getOrders: async (req, res) => {
       try {
-         // const {filter, search} = req.body
+         const { filter, search } = req.body;
          const { p = 0 } = req.query;
+         let criteria = {};
+         const failedStatus = [
+            "deny",
+            "cancel",
+            "expire",
+            "failure",
+            "courier_not_found",
+            "cancelled",
+            "rejected",
+            "disposed",
+            "returned",
+         ];
+
+         const ongoingStatus = [
+            "confirmed",
+            "allocated",
+            "picking_up",
+            "picked",
+            "dropping_off",
+            "return_in_transit",
+         ];
+
          let options = {
             pagination: false,
          };
@@ -425,7 +457,31 @@ module.exports = {
             };
          }
 
+         if (
+            filter == "pending" ||
+            filter == "delivered" ||
+            filter == "completed" ||
+            filter == "settlement"
+         ) {
+            criteria = {
+               status: filter,
+            };
+         }
+
+         if (filter == "ongoing") {
+            criteria = {
+               $expr: { $in: ["$status", ongoingStatus] },
+            };
+         }
+
+         if (filter == "failed") {
+            criteria = {
+               $expr: { $in: ["$status", failedStatus] },
+            };
+         }
+
          const aggregate = Order.aggregate([
+            { $match: criteria },
             {
                $lookup: {
                   from: "users",
@@ -463,18 +519,6 @@ module.exports = {
                },
             },
             { $unwind: "$transaction" },
-            // {
-            //    $lookup: {
-            //       from: "vouchers",
-            //       localField: "voucher.voucher_id",
-            //       foreignField: "_id",
-            //       as: "voucher_detail",
-            //       pipeline: [{
-            //          voucherName: 1, conditions: 1, value: 1,
-            //       }]
-            //    },
-            // },
-            // { $unwind: "$voucher_detail" },
          ]);
 
          const orders = await Order.aggregatePaginate(aggregate, options);

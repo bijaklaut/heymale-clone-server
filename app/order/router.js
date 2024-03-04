@@ -19,9 +19,4 @@ router.post("/paymenthooks", upload.none(), paymentHooks);
 router.post("/shipping", upload.none(), createShippingOrder);
 router.post("/shipmenthooks", upload.none(), shipmentHooks);
 
-// router.get("/detail/:id", getVoucherDetail);
-// router.post("/create", isLogin, upload.none(), createVoucher);
-// router.put("/update", isLogin, upload.none(), updateVoucher);
-// router.delete("/:id", isLogin, deleteVoucher);
-
 module.exports = router;
