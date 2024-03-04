@@ -18,7 +18,7 @@ module.exports = {
 
          return res.status(201).send({
             status: 201,
-            message: "Item has been added to your cart",
+            message: "Cart has been updated",
             payload: insertCart,
          });
       } catch (error) {

@@ -28,20 +28,19 @@ const { default: axios } = require("axios");
 
 module.exports = {
    createOrder: async (req, res) => {
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
-      const token = req.headers.authorization.split(" ")[1];
-      const { id } = jwt.decode(token);
-      const { orderItems, voucher, shipping } = req.body;
-      const invoice = await generateInvoice();
-      const coreApi = new midtransClient.CoreApi({
-         isProduction: false,
-         serverKey: MIDTRANS_SERVERKEY_SBOX,
-         clientKey: MIDTRANS_CLIENTKEY_SBOX,
-      });
-
       try {
+         const session = await mongoose.startSession();
+         session.startTransaction();
+
+         const token = req.headers.authorization.split(" ")[1];
+         const { id } = jwt.decode(token);
+         const { orderItems, voucher, shipping } = req.body;
+         const invoice = await generateInvoice();
+         const coreApi = new midtransClient.CoreApi({
+            isProduction: false,
+            serverKey: MIDTRANS_SERVERKEY_SBOX,
+            clientKey: MIDTRANS_CLIENTKEY_SBOX,
+         });
          const customer = await User.findOne({ _id: id });
          let {
             transactionItems,
