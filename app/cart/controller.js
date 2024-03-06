@@ -90,7 +90,6 @@ module.exports = {
    emptyCart: async (req, res) => {
       try {
          const { user } = req.params;
-         // const cart = await Cart.findOneAndDelete({ user: user });
 
          let cart = await Cart.findOneAndUpdate(
             { user },
