@@ -56,6 +56,9 @@ const transactionSchema = mongoose.Schema(
       biller_code: {
          type: String,
       },
+      permata_va_number: {
+         type: String,
+      },
       expiry_time: {
          type: Date,
       },
