@@ -121,30 +121,30 @@ module.exports = {
             deleteS3Object(req.file.key);
          }
 
+         let response = {
+            status: 500,
+            message: "Internal Server Error",
+         };
+
          if (err.name === "ValidationError") {
-            return res.status(409).send({
+            response = {
                status: 409,
-               payload: null,
                message: "Validation Error",
                errorDetail: err.errors,
-            });
-         } else if (err.code === 11000) {
+            };
+         }
+
+         if (err.code === 11000) {
             // Mengambil nama field yang menyebabkan error
             const key = Object.keys(err.keyValue)[0];
-            res.status(409).send({
+            response = {
                status: 409,
-               payload: null,
                message: `Failed to create product with existed ${key}`,
                errorDetail: err,
-            });
-         } else {
-            res.status(400).send({
-               status: 400,
-               payload: null,
-               message: "Failed to create product",
-               errorDetail: err,
-            });
+            };
          }
+
+         return res.status(response.status).send(response);
       }
    },
    productDetail: async (req, res) => {
