@@ -15,6 +15,9 @@ module.exports = {
    BITESHIP_WEBHOOKS_SIGNATURE: process.env.BITESHIP_WEBHOOKS_SIGNATURE,
    EXPIRED_ACCESS: 1000 * 60 * 15, // 15 MINUTES
    EXPIRED_REFRESH: 1000 * 60 * 60 * 24 * 14, // 14 DAYS
+   AWS_S3_BUCKET: process.env.AWS_S3_BUCKET,
+   AWS_REGION: process.env.AWS_REGION,
+   AWS_SIGNEDURL_EXPIRE: 600,
 };
 
 const dummy = {

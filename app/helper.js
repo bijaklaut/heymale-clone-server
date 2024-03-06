@@ -1,7 +1,15 @@
 const axios = require("axios").default;
-const { MIDTRANS_BASEURL_SBOX, MIDTRANS_SERVERKEY_SBOX } = require("../config");
+const {
+   MIDTRANS_BASEURL_SBOX,
+   MIDTRANS_SERVERKEY_SBOX,
+   AWS_S3_BUCKET,
+   AWS_SIGNEDURL_EXPIRE,
+} = require("../config");
 const Transaction = require("./transaction/model");
 const Token = require("./token/model");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const client = new S3Client();
+const S3 = require("@aws-sdk/s3-request-presigner");
 
 const getTodayDate = (forShipment = false) => {
    let today = new Date();
@@ -358,6 +366,15 @@ const generateRefreshToken = async () => {
    return newRefresh;
 };
 
+const getSignedUrl = async (key) => {
+   return new Promise((resolve, reject) => {
+      const command = new GetObjectCommand({ Bucket: AWS_S3_BUCKET, Key: key });
+      S3.getSignedUrl(client, command, { expiresIn: AWS_SIGNEDURL_EXPIRE })
+         .then((url) => resolve(url))
+         .catch((err) => reject(err));
+   });
+};
+
 module.exports = {
    getTodayDate,
    generateInvoice,
@@ -369,4 +386,5 @@ module.exports = {
    cancelPayment,
    transformShippingData,
    generateRefreshToken,
+   getSignedUrl,
 };
