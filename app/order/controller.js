@@ -6,6 +6,7 @@ const Shipment = require("../shipment/model");
 const Order = require("./model");
 const User = require("../user/model");
 const Voucher = require("../voucher/model");
+const crypto = require("crypto");
 const {
    MIDTRANS_SERVERKEY_SBOX,
    MIDTRANS_CLIENTKEY_SBOX,
@@ -28,10 +29,9 @@ const { default: axios } = require("axios");
 
 module.exports = {
    createOrder: async (req, res) => {
+      const session = await mongoose.startSession();
+      session.startTransaction();
       try {
-         const session = await mongoose.startSession();
-         session.startTransaction();
-
          const token = req.headers.authorization.split(" ")[1];
          const { id } = jwt.decode(token);
          const { orderItems, voucher, shipping } = req.body;
@@ -167,22 +167,26 @@ module.exports = {
       const notificationJson = req.body;
 
       try {
-         const notification = await apiClient.transaction.notification(
-            notificationJson
-         );
-         const { order_id, transaction_status } = notificationJson;
+         const { order_id, transaction_status, status_code, gross_amount } =
+            notificationJson;
+         const signature_key = crypto
+            .createHash("sha512")
+            .update(
+               `${order_id}${status_code}${gross_amount}${MIDTRANS_SERVERKEY_SBOX}`
+            )
+            .digest("hex");
 
-         if (notification.signature_key !== notificationJson.signature_key) {
+         if (notificationJson.signature_key !== signature_key) {
             throw "Invalid signature key, can't handle request";
          }
 
-         const updateOrder = await Order.updateOne(
+         await Order.updateOne(
             { invoice: order_id },
             { status: transaction_status },
             { session }
          );
 
-         const updateTransaction = await Transaction.updateOne(
+         await Transaction.updateOne(
             { order_id: order_id },
             { transaction_status },
             { session }
@@ -213,11 +217,9 @@ module.exports = {
 
          await session.commitTransaction();
 
-         res.status(200).send({
-            updateOrder,
-            updateTransaction,
-            notification,
-            notificationJson,
+         return res.status(200).send({
+            status: 200,
+            message: "Request handled successfully",
          });
       } catch (error) {
          await session.abortTransaction();
@@ -226,7 +228,7 @@ module.exports = {
             error_details: error,
          };
 
-         res.status(responseData.status).send(responseData);
+         return res.status(responseData.status).send(responseData);
       } finally {
          session.endSession();
       }
