@@ -90,11 +90,21 @@ module.exports = {
    emptyCart: async (req, res) => {
       try {
          const { user } = req.params;
-         const cart = await Cart.findOneAndDelete({ user: user });
+         // const cart = await Cart.findOneAndDelete({ user: user });
+
+         let cart = await Cart.findOneAndUpdate(
+            { user },
+            { items: [] },
+            {
+               new: true,
+               runValidators: true,
+               projection: { items: 1, user: 1 },
+            }
+         );
 
          let responseData = {
             status: 200,
-            message: "Cart has been deleted",
+            message: "Cart has been emptied",
             payload: cart,
          };
 
