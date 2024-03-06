@@ -7,7 +7,12 @@ const {
 } = require("../config");
 const Transaction = require("./transaction/model");
 const Token = require("./token/model");
-const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const {
+   S3Client,
+   GetObjectCommand,
+   DeleteObjectCommand,
+   HeadObjectCommand,
+} = require("@aws-sdk/client-s3");
 const client = new S3Client();
 const S3 = require("@aws-sdk/s3-request-presigner");
 
@@ -375,6 +380,32 @@ const getSignedUrl = async (key) => {
    });
 };
 
+const deleteS3Object = async (key) => {
+   return new Promise((resolve, reject) => {
+      const command = new DeleteObjectCommand({
+         Bucket: AWS_S3_BUCKET,
+         Key: key,
+      });
+      client
+         .send(command)
+         .then((result) => resolve(result))
+         .catch((err) => reject(err));
+   });
+};
+
+const checkS3Object = async (key) => {
+   return new Promise((resolve, reject) => {
+      const command = new HeadObjectCommand({
+         Bucket: AWS_S3_BUCKET,
+         Key: key,
+      });
+      client
+         .send(command)
+         .then((result) => resolve(result))
+         .catch((error) => reject(error));
+   });
+};
+
 module.exports = {
    getTodayDate,
    generateInvoice,
@@ -387,4 +418,6 @@ module.exports = {
    transformShippingData,
    generateRefreshToken,
    getSignedUrl,
+   deleteS3Object,
+   checkS3Object,
 };

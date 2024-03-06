@@ -1,12 +1,15 @@
 const Product = require("./model");
-const fs = require("fs");
+const Test = require("./aws-model");
+// const fs = require("fs");
 const { ROOT_PATH } = require("../../config");
+const fs = require("@cyclic.sh/s3fs");
+const { getSignedUrl, deleteS3Object, checkS3Object } = require("../helper");
 
 module.exports = {
    getProducts: async (req, res) => {
       try {
          const { query: filter, search } = req.body;
-         const { p } = req.query;
+         const { p = 0 } = req.query;
          let criteria = {};
          let options = {
             pagination: false,
@@ -53,13 +56,28 @@ module.exports = {
             },
          ]);
 
-         const products = await Product.aggregatePaginate(aggregate, options);
+         let products = await Product.aggregatePaginate(aggregate, options);
+         let copyProducts = JSON.parse(JSON.stringify(products.docs));
+         let promises = [];
 
-         res.status(200).send({
-            status: 200,
-            payload: products,
-            message: "Get all products",
-            errorDetail: null,
+         for (let item of copyProducts) {
+            let promise = getSignedUrl(item.thumbnail);
+            promises.push(promise);
+         }
+
+         Promise.all(promises).then((values) => {
+            copyProducts.forEach((item, index) => {
+               copyProducts[index].thumbnail = values[index];
+            });
+
+            products.docs = copyProducts;
+
+            return res.status(200).send({
+               status: 200,
+               payload: products,
+               message: "Get all products",
+               errorDetail: null,
+            });
          });
       } catch (error) {
          res.status(500).send({
@@ -72,15 +90,15 @@ module.exports = {
    },
    createProduct: async (req, res) => {
       try {
-         const { name, category, variant, price, description, status } =
+         const { name, category, variant, price, description, status, weight } =
             req.body;
          let thumbnail = "";
 
          if (req.file) {
-            thumbnail = req.file.filename;
+            thumbnail = req.file.key;
          }
 
-         const newProduct = new Product({
+         const newProduct = await new Product({
             name,
             category,
             variant,
@@ -88,11 +106,10 @@ module.exports = {
             description,
             thumbnail,
             status,
-         });
+            weight,
+         }).save();
 
-         await newProduct.save();
-
-         res.status(201).send({
+         return res.status(201).send({
             status: 201,
             payload: newProduct,
             message: "Product created successfully",
@@ -101,7 +118,7 @@ module.exports = {
       } catch (err) {
          // Untuk menghapus file yang diupload
          if (req.file) {
-            fs.unlinkSync(req.file.path);
+            deleteS3Object(req.file.key);
          }
 
          if (err.name === "ValidationError") {
@@ -165,32 +182,35 @@ module.exports = {
    },
    updateProduct: async (req, res) => {
       try {
-         const { name, category, variant, price, description, status } =
+         const { name, category, variant, price, description, status, weight } =
             req.body;
          const { id } = req.params;
          const oldProduct = await Product.findById(id);
          let { thumbnail } = oldProduct;
 
          if (req.file) {
-            thumbnail = req.file.filename;
+            thumbnail = req.file.key;
          }
 
          Product.findByIdAndUpdate(
             id,
-            { name, category, variant, price, description, thumbnail, status },
+            {
+               name,
+               category,
+               variant,
+               price,
+               description,
+               thumbnail,
+               status,
+               weight,
+            },
             { new: true, runValidators: true }
          ).then((result) => {
-            if (
-               fs.existsSync(
-                  `${ROOT_PATH}/public/upload/product/${oldProduct.thumbnail}`
-               ) &&
-               req.file
-            ) {
-               fs.unlinkSync(
-                  `${ROOT_PATH}/public/upload/product/${oldProduct.thumbnail}`
-               );
+            if (checkS3Object(oldProduct.thumbnail) && req.file) {
+               deleteS3Object(oldProduct.thumbnail);
             }
-            res.status(201).send({
+
+            return res.status(201).send({
                status: 201,
                payload: result,
                message: "Product updated successfully",
@@ -200,7 +220,7 @@ module.exports = {
       } catch (err) {
          // Untuk menghapus file yang diupload
          if (req.file) {
-            fs.unlinkSync(req.file.path);
+            deleteS3Object(req.file.key);
          }
 
          if (err.name === "ValidationError") {
@@ -236,10 +256,8 @@ module.exports = {
 
          Product.findOneAndDelete({ _id: id }).then((result) => {
             if (result) {
-               const deletePath = `${ROOT_PATH}/public/upload/product/${thumbnail}`;
-
-               if (fs.existsSync(deletePath) && thumbnail) {
-                  fs.unlinkSync(deletePath);
+               if (checkS3Object(thumbnail)) {
+                  deleteS3Object(thumbnail);
                }
 
                res.status(200).send({
@@ -264,6 +282,91 @@ module.exports = {
             payload: null,
             message: "Failed to delete product",
             errorDetail: error,
+         });
+      }
+   },
+   awsTest: async (req, res) => {
+      try {
+         const { name } = req.body;
+         let thumbnail = "";
+
+         if (req.file) {
+            thumbnail = req.file.key;
+         }
+
+         const newTestItem = await new Test({
+            name,
+            thumbnail,
+         }).save();
+
+         res.status(201).send({
+            status: 201,
+            payload: newTestItem,
+            message: "Product created successfully",
+            errorDetail: null,
+         });
+      } catch (err) {
+         // Untuk menghapus file yang diupload
+         if (req.file) {
+            fs.unlinkSync(req.file.key);
+         }
+
+         if (err.name === "ValidationError") {
+            return res.status(409).send({
+               status: 409,
+               payload: null,
+               message: "Validation Error",
+               errorDetail: err.errors,
+            });
+         } else if (err.code === 11000) {
+            // Mengambil nama field yang menyebabkan error
+            const key = Object.keys(err.keyValue)[0];
+            res.status(409).send({
+               status: 409,
+               payload: null,
+               message: `Failed to create product with existed ${key}`,
+               errorDetail: err,
+            });
+         } else {
+            res.status(400).send({
+               status: 400,
+               payload: null,
+               message: "Failed to create product",
+               errorDetail: err,
+            });
+         }
+      }
+   },
+   getTest: async (req, res) => {
+      try {
+         let items = await Test.find();
+         let promises = [];
+
+         for (let item of items) {
+            let promise = getSignedUrl(item.thumbnail);
+            promises.push(promise);
+         }
+
+         Promise.all(promises)
+            .then((values) => {
+               items.forEach((item, index) => {
+                  items[index].thumbnail = values[index];
+               });
+
+               res.status(200).send({
+                  status: 200,
+                  payload: items,
+                  message: "Get all test items",
+               });
+            })
+            .catch((error) => {
+               throw error;
+            });
+      } catch (error) {
+         res.status(500).send({
+            status: 500,
+            message: "Internal Server Error",
+            error_detail: error,
          });
       }
    },

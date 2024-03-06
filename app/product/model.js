@@ -59,6 +59,10 @@ const productSchema = mongoose.Schema(
          enum: ["Active", "Inactive"],
          default: "Active",
       },
+      weight: {
+         type: Number,
+         default: 200,
+      },
    },
    {
       timestamps: true,

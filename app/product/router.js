@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { upload, multerMiddleware } = require("./multer-config");
+const { upload, multerMiddleware } = require("./multer-aws");
 const {
    createProduct,
    getProducts,
    productDetail,
    updateProduct,
    deleteProduct,
+   awsTest,
+   getTest,
 } = require("./controller");
 const { isLogin } = require("../middleware/auth");
 
@@ -26,5 +28,11 @@ router.put(
    updateProduct
 );
 router.delete("/:id", isLogin, deleteProduct);
+router.post(
+   "/testupload",
+   multerMiddleware(upload.single("thumbnail")),
+   awsTest
+);
+router.get("/gettest", getTest);
 
 module.exports = router;
