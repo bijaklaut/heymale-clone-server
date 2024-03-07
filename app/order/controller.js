@@ -530,22 +530,43 @@ module.exports = {
             { $unwind: "$transaction" },
          ]);
 
+         // Order need signed url for related items
+         // This solution is bad at scalability, need a better one
          const orders = await Order.aggregatePaginate(aggregate, options);
+         let products = await Product.find({}, "thumbnail");
+         let copyProducts = JSON.parse(JSON.stringify(products));
+         let promises = [];
 
-         let responseData = {
-            status: 200,
-            payload: orders,
-            message: "Successfully get all orders",
-         };
-
-         if (!orders.docs.length) {
-            responseData = {
-               status: 404,
-               message: "Order not found",
-            };
+         for (const item of copyProducts) {
+            promises.push(getSignedUrl(item.thumbnail));
          }
 
-         return res.status(responseData.status).send(responseData);
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].thumbnail = values[index];
+               });
+
+               products = copyProducts;
+
+               let responseData = {
+                  status: 200,
+                  payload: { orders, products },
+                  message: "Successfully get all orders",
+               };
+
+               if (!orders.docs.length) {
+                  responseData = {
+                     status: 404,
+                     message: "Order not found",
+                  };
+               }
+
+               return res.status(responseData.status).send(responseData);
+            })
+            .catch((error) => {
+               throw error;
+            });
       } catch (error) {
          let responseData = {
             status: 500,
