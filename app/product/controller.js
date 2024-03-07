@@ -65,22 +65,26 @@ module.exports = {
             promises.push(promise);
          }
 
-         Promise.all(promises).then((values) => {
-            copyProducts.forEach((item, index) => {
-               copyProducts[index].thumbnail = values[index];
-            });
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].thumbnail = values[index];
+               });
 
-            products.docs = copyProducts;
+               products.docs = copyProducts;
 
-            return res.status(200).send({
-               status: 200,
-               payload: products,
-               message: "Get all products",
-               errorDetail: null,
+               return res.status(200).send({
+                  status: 200,
+                  payload: products,
+                  message: "Get all products",
+                  errorDetail: null,
+               });
+            })
+            .catch((error) => {
+               throw error;
             });
-         });
       } catch (error) {
-         res.status(500).send({
+         return res.status(500).send({
             status: 500,
             payload: null,
             message: "Internal Server Error",

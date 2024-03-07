@@ -1,4 +1,6 @@
 const Voucher = require("./model");
+const Product = require("../product/model");
+const { getSignedUrl } = require("../helper");
 
 module.exports = {
    getVouchers: async (req, res) => {
@@ -79,14 +81,37 @@ module.exports = {
                },
             },
          ]);
-         const vouchers = await Voucher.aggregatePaginate(aggregate, options);
-         res.status(200).send({
-            status: 200,
-            payload: vouchers,
-            message: "Get vouchers",
-         });
+
+         // Voucher need signed url for applicable product
+         // This solution is bad at scalability, need a better one
+         let vouchers = await Voucher.aggregatePaginate(aggregate, options);
+         let products = await Product.find({}, "thumbnail");
+         let copyProducts = JSON.parse(JSON.stringify(products));
+         let promises = [];
+
+         for (const item of copyProducts) {
+            promises.push(getSignedUrl(item.thumbnail));
+         }
+
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].thumbnail = values[index];
+               });
+
+               products = copyProducts;
+
+               return res.status(200).send({
+                  status: 200,
+                  payload: { vouchers, products },
+                  message: "Get vouchers",
+               });
+            })
+            .catch((error) => {
+               throw error;
+            });
       } catch (error) {
-         res.status(500).send({
+         return res.status(500).send({
             status: 500,
             payload: null,
             message: "Internal Server Error",
