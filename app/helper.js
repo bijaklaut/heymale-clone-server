@@ -393,6 +393,19 @@ const deleteS3Object = async (key) => {
    });
 };
 
+const getS3Object = async (key) => {
+   return new Promise((resolve, reject) => {
+      const command = new GetObjectCommand({
+         Bucket: AWS_S3_BUCKET,
+         Key: key,
+      });
+      client
+         .send(command)
+         .then((result) => resolve(result.Body.transformToString("base64")))
+         .catch((err) => reject(err));
+   });
+};
+
 const checkS3Object = async (key) => {
    return new Promise((resolve, reject) => {
       const command = new HeadObjectCommand({
@@ -420,4 +433,5 @@ module.exports = {
    getSignedUrl,
    deleteS3Object,
    checkS3Object,
+   getS3Object,
 };

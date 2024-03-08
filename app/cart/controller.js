@@ -1,3 +1,4 @@
+const { getS3Object } = require("../helper");
 const Cart = require("./model");
 
 module.exports = {
@@ -16,11 +17,31 @@ module.exports = {
             }
          );
 
-         return res.status(201).send({
-            status: 201,
-            message: "Cart has been updated",
-            payload: insertCart,
-         });
+         let copyProducts = JSON.parse(JSON.stringify(insertCart.items));
+         let promises = [];
+
+         for (let item of copyProducts) {
+            let promise = getS3Object(item.thumbnail);
+            promises.push(promise);
+         }
+
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].thumbnail = values[index];
+               });
+
+               insertCart.items = copyProducts;
+
+               return res.status(201).send({
+                  status: 201,
+                  message: "Cart has been updated",
+                  payload: insertCart,
+               });
+            })
+            .catch((error) => {
+               throw error;
+            });
       } catch (error) {
          let responseData = {
             status: 500,
@@ -47,23 +68,43 @@ module.exports = {
    getUserCart: async (req, res) => {
       try {
          const { user } = req.body;
-         const userCart = await Cart.findOne({ user: user });
-
-         let responseData = {
-            status: 200,
-            message: "Get user cart successfully",
-            payload: userCart,
-         };
+         let userCart = await Cart.findOne({ user: user });
 
          if (!userCart) {
-            responseData = {
+            const responseData = {
                status: 404,
                message: "User cart not found",
-               payload: userCart,
             };
+
+            return res.status(responseData.status).send(responseData);
          }
 
-         return res.status(responseData.status).send(responseData);
+         let copyProducts = JSON.parse(JSON.stringify(userCart.items));
+         let promises = [];
+
+         for (let item of copyProducts) {
+            let promise = getS3Object(item.thumbnail);
+            promises.push(promise);
+         }
+
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].thumbnail = values[index];
+               });
+
+               userCart.items = copyProducts;
+
+               return res.status(200).send({
+                  status: 200,
+                  payload: userCart,
+                  message: "Get user cart successfully",
+                  errorDetail: null,
+               });
+            })
+            .catch((error) => {
+               throw error;
+            });
       } catch (error) {
          let responseData = {
             status: 500,

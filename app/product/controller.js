@@ -3,7 +3,12 @@ const Test = require("./aws-model");
 // const fs = require("fs");
 const { ROOT_PATH } = require("../../config");
 const fs = require("@cyclic.sh/s3fs");
-const { getSignedUrl, deleteS3Object, checkS3Object } = require("../helper");
+const {
+   getSignedUrl,
+   deleteS3Object,
+   checkS3Object,
+   getS3Object,
+} = require("../helper");
 
 module.exports = {
    getProducts: async (req, res) => {
@@ -285,6 +290,68 @@ module.exports = {
             status: 500,
             payload: null,
             message: "Failed to delete product",
+            errorDetail: error,
+         });
+      }
+   },
+   getCatalog: async (req, res) => {
+      try {
+         let criteria = { status: "Active" };
+         let options = {
+            pagination: false,
+            sort: { "category.name": 1, name: 1 },
+         };
+
+         const aggregate = Product.aggregate([
+            {
+               $match: criteria,
+            },
+            {
+               $lookup: {
+                  from: "categories",
+                  localField: "category",
+                  foreignField: "_id",
+                  as: "category",
+               },
+            },
+            {
+               $unwind: "$category",
+            },
+            {
+               $sort: { "category.name": 1, name: 1 },
+            },
+         ]);
+
+         let products = await Product.aggregatePaginate(aggregate, options);
+         let copyProducts = JSON.parse(JSON.stringify(products.docs));
+         let promises = [];
+
+         for (let item of copyProducts) {
+            let promise = getS3Object(item.thumbnail);
+            promises.push(promise);
+         }
+
+         Promise.all(promises)
+            .then((values) => {
+               copyProducts.forEach((item, index) => {
+                  copyProducts[index].display = values[index];
+               });
+
+               products.docs = copyProducts;
+
+               return res.status(200).send({
+                  status: 200,
+                  payload: products,
+                  message: "Get all products",
+               });
+            })
+            .catch((error) => {
+               throw error;
+            });
+      } catch (error) {
+         return res.status(500).send({
+            status: 500,
+            message: "Internal Server Error",
             errorDetail: error,
          });
       }

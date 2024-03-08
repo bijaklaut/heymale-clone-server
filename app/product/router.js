@@ -9,10 +9,12 @@ const {
    deleteProduct,
    awsTest,
    getTest,
+   getCatalog,
 } = require("./controller");
 const { isLogin } = require("../middleware/auth");
 
 // router.get("/", getProducts);
+router.get("/catalog", getCatalog);
 router.post("/", getProducts);
 router.post(
    "/create",
