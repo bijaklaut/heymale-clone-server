@@ -17,26 +17,24 @@ module.exports = {
             }
          );
 
-         let copyProducts = JSON.parse(JSON.stringify(insertCart.items));
+         let copyCart = JSON.parse(JSON.stringify(insertCart));
          let promises = [];
 
-         for (let item of copyProducts) {
+         for (let item of copyCart.items) {
             let promise = getS3Object(item.thumbnail);
             promises.push(promise);
          }
 
          Promise.all(promises)
             .then((values) => {
-               copyProducts.forEach((item, index) => {
-                  copyProducts[index].thumbnail = values[index];
+               copyCart.items.forEach((item, index) => {
+                  copyCart.items[index].thumbnail_file = values[index];
                });
-
-               insertCart.items = copyProducts;
 
                return res.status(201).send({
                   status: 201,
                   message: "Cart has been updated",
-                  payload: insertCart,
+                  payload: copyCart,
                });
             })
             .catch((error) => {
@@ -79,25 +77,23 @@ module.exports = {
             return res.status(responseData.status).send(responseData);
          }
 
-         let copyProducts = JSON.parse(JSON.stringify(userCart.items));
+         let copyCart = JSON.parse(JSON.stringify(userCart));
          let promises = [];
 
-         for (let item of copyProducts) {
+         for (let item of copyCart.items) {
             let promise = getS3Object(item.thumbnail);
             promises.push(promise);
          }
 
          Promise.all(promises)
             .then((values) => {
-               copyProducts.forEach((item, index) => {
-                  copyProducts[index].thumbnail = values[index];
+               copyCart.items.forEach((item, index) => {
+                  copyCart.items[index].thumbnail_file = values[index];
                });
-
-               userCart.items = copyProducts;
 
                return res.status(200).send({
                   status: 200,
-                  payload: userCart,
+                  payload: copyCart,
                   message: "Get user cart successfully",
                   errorDetail: null,
                });

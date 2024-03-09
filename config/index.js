@@ -17,5 +17,5 @@ module.exports = {
    EXPIRED_REFRESH: 1000 * 60 * 60 * 24 * 14, // 14 DAYS
    AWS_S3_BUCKET: process.env.CYCLIC_BUCKET_NAME,
    AWS_REGION: process.env.AWS_REGION,
-   AWS_SIGNEDURL_EXPIRE: 600,
+   AWS_SIGNEDURL_EXPIRE: 3600,
 };
