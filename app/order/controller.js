@@ -70,7 +70,9 @@ module.exports = {
          results.forEach((result) => {
             Object.entries(result.variant).forEach(([key, value]) => {
                if (value < 0) {
-                  throw `${result.name} Variant ${key} out of stock`;
+                  throw `${
+                     result.name
+                  } Variant ${key.toUpperCase()} out of stock`;
                }
             });
          });
