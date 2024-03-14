@@ -122,9 +122,6 @@ module.exports = {
       } catch (error) {
          await session.abortTransaction();
 
-         // Probably unnecessary action
-         // const cancelPaymentResult = await cancelPayment(invoice);
-
          let responseData = {
             status: 500,
             message: "Internal Server Error",
@@ -172,12 +169,6 @@ module.exports = {
       const session = await mongoose.startSession();
       session.startTransaction();
 
-      const apiClient = new midtransClient.CoreApi({
-         isProduction: false,
-         serverKey: MIDTRANS_SERVERKEY_SBOX,
-         clientKey: MIDTRANS_CLIENTKEY_SBOX,
-      });
-
       const notificationJson = req.body;
 
       try {
@@ -194,6 +185,22 @@ module.exports = {
             throw "Invalid signature key, can't handle request";
          }
 
+         // if (
+         //    transaction_status == "cancel" ||
+         //    transaction_status == "deny" ||
+         //    transaction_status == "expire"
+         // ) {
+         // }
+
+         if (transaction_status == "pending") {
+            const order = await Order.findOne({ invoice: order_id });
+
+            if (!order) {
+               await Transaction.findOneAndDelete({ order_id });
+               await Shipment.findOneAndDelete({ reference_id: order_id });
+            }
+         }
+
          await Order.updateOne(
             { invoice: order_id },
             { status: transaction_status },
@@ -205,29 +212,6 @@ module.exports = {
             { transaction_status },
             { session }
          );
-
-         // if (transactionStatus == "settlement") {
-         // } else if (
-         //    transactionStatus == "cancel" ||
-         //    transactionStatus == "deny" ||
-         //    transactionStatus == "expire"
-         // ) {
-         //    const updateOrder = await Order.updateOne(
-         //       { invoice: order_id },
-         //       { status: transactionStatus },
-         //       { session }
-         //    );
-
-         //    const updateTransaction = await Transaction.updateOne(
-         //       { order_id: order_id },
-         //       { transaction_status: transactionStatus },
-         //       { session }
-         //    );
-         // } else if (transactionStatus == "pending") {
-         //    // TODO set transaction status on your databaase to 'pending' / waiting payment
-         // } else if (transactionStatus == "refund") {
-         //    // TODO set transaction status on your databaase to 'refund'
-         // }
 
          await session.commitTransaction();
 
