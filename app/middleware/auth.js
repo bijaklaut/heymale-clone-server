@@ -5,7 +5,9 @@ module.exports = {
    isLogin: async (req, res, next) => {
       try {
          // Catch token from request header
-         const token = req.headers.authorization.split(" ")[1];
+         const token = req.headers.authorization
+            ? req.headers.authorization.split(" ")[1]
+            : "";
 
          if (token) {
             const verify = jwt.verify(token, SECRET_KEY);
