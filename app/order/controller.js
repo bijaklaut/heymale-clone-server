@@ -16,11 +16,9 @@ const {
 } = require("../../config");
 const midtransClient = require("midtrans-client");
 const {
-   getItemPrice,
    orderItemsAction,
    generateInvoice,
    generatePaymentData,
-   cancelPayment,
    generateOrderData,
    generateShippingData,
    transformShippingData,
@@ -70,9 +68,7 @@ module.exports = {
          results.forEach((result) => {
             Object.entries(result.variant).forEach(([key, value]) => {
                if (value < 0) {
-                  throw `${
-                     result.name
-                  } Variant ${key.toUpperCase()} out of stock`;
+                  throw `There is unavailable item`;
                }
             });
          });
@@ -130,7 +126,7 @@ module.exports = {
             error_details: error,
          };
 
-         if (error.includes("out of stock")) {
+         if (error.includes("unavailable")) {
             responseData = {
                status: 400,
                message: error,
