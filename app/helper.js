@@ -1,4 +1,5 @@
 const axios = require("axios").default;
+const Product = require("./product/model");
 const {
    MIDTRANS_BASEURL_SBOX,
    MIDTRANS_SERVERKEY_SBOX,
@@ -68,7 +69,7 @@ const getItemPrice = (total, item) => {
    return total + item.price * itemQty;
 };
 
-const orderItemsAction = (orderItems) => {
+const orderItemsAction = (orderItems, session) => {
    let newOrderItems = [];
    let transactionItems = [];
    let bulkOperations = [];
@@ -107,19 +108,18 @@ const orderItemsAction = (orderItems) => {
          weight: 200,
       };
 
-      let operation = {
-         updateOne: {
-            filter: { _id: item._id },
-            update: {
-               $inc: {
-                  "variant.s": item.variants.s ? item.variants.s * -1 : 0,
-                  "variant.m": item.variants.m ? item.variants.m * -1 : 0,
-                  "variant.l": item.variants.l ? item.variants.l * -1 : 0,
-                  "variant.xl": item.variants.xl ? item.variants.xl * -1 : 0,
-               },
+      let operation = Product.findByIdAndUpdate(
+         item._id,
+         {
+            $inc: {
+               "variant.s": item.variants.s ? item.variants.s * -1 : 0,
+               "variant.m": item.variants.m ? item.variants.m * -1 : 0,
+               "variant.l": item.variants.l ? item.variants.l * -1 : 0,
+               "variant.xl": item.variants.xl ? item.variants.xl * -1 : 0,
             },
          },
-      };
+         { new: true, runValidators: true, session }
+      );
 
       shippingItems.push(dataDlv);
       transactionItems.push(dataTrx);

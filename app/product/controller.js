@@ -201,7 +201,7 @@ module.exports = {
             thumbnail = req.file.key;
          }
 
-         Product.findByIdAndUpdate(
+         const updateProduct = await Product.findByIdAndUpdate(
             id,
             {
                name,
@@ -214,17 +214,17 @@ module.exports = {
                weight,
             },
             { new: true, runValidators: true }
-         ).then((result) => {
-            if (checkS3Object(oldProduct.thumbnail) && req.file) {
-               deleteS3Object(oldProduct.thumbnail);
-            }
+         );
 
-            return res.status(201).send({
-               status: 201,
-               payload: result,
-               message: "Product updated successfully",
-               errorDetail: null,
-            });
+         if (checkS3Object(oldProduct.thumbnail) && req.file) {
+            deleteS3Object(oldProduct.thumbnail);
+         }
+
+         return res.status(201).send({
+            status: 201,
+            payload: updateProduct,
+            message: "Product updated successfully",
+            errorDetail: null,
          });
       } catch (err) {
          // Untuk menghapus file yang diupload

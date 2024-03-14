@@ -48,7 +48,7 @@ module.exports = {
             bulkOperations,
             newOrderItems,
             shippingItems,
-         } = orderItemsAction(orderItems);
+         } = orderItemsAction(orderItems, session);
 
          const paymentData = generatePaymentData(
             customer,
@@ -57,24 +57,30 @@ module.exports = {
             req.body
          );
 
+         // Create Payment API
+         const paymentCharge = await coreApi.charge(paymentData);
+
+         if (paymentCharge.status_code != 201) {
+            throw paymentCharge;
+         }
+
          // When new Transaction created, reduce product stock and voucher quota
-         await Product.bulkWrite(bulkOperations, {
-            session,
+         const results = await Promise.all(bulkOperations);
+
+         results.forEach((result) => {
+            Object.entries(result.variant).forEach(([key, value]) => {
+               if (value < 0) {
+                  throw `${result.name} Variant ${key} out of stock`;
+               }
+            });
          });
 
          if (voucher.voucher_id) {
             await Voucher.updateOne(
                { _id: voucher._id },
                { $inc: { voucherQuota: -1 } },
-               { session }
+               { session, runValidator: true }
             );
-         }
-
-         // Create Payment API
-         const paymentCharge = await coreApi.charge(paymentData);
-
-         if (paymentCharge.status_code != 201) {
-            throw paymentCharge;
          }
 
          // Create new Transaction from Payment Response
@@ -125,7 +131,14 @@ module.exports = {
             error_details: error,
          };
 
-         if (error.message.includes("Midtrans")) {
+         if (error.includes("out of stock")) {
+            responseData = {
+               status: 400,
+               message: error,
+            };
+         }
+
+         if (error.message && error.message.includes("Midtrans")) {
             responseData = {
                status: Number(error.httpStatusCode),
                error_details: error.ApiResponse,
