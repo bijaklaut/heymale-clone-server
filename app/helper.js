@@ -18,13 +18,15 @@ const client = new S3Client();
 const S3 = require("@aws-sdk/s3-request-presigner");
 
 const getTodayDate = (forShipment = false) => {
-   let today = new Date();
+   const localDate = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+   });
+   let today = new Date(localDate);
 
    // Any shipping data that generated after 17.00
    // will be shipped tomorrow
    if (forShipment && today.getHours() > 16) {
-      const tomorrow = today.getDate() + 1;
-      today.setDate(tomorrow);
+      today.setDate(today.getDate() + 1);
    }
 
    const date = today.getDate() < 10 ? `0${today.getDate()}` : today.getDate();
@@ -38,7 +40,10 @@ const getTodayDate = (forShipment = false) => {
 };
 
 const generateInvoice = async () => {
-   const today = new Date();
+   const localDate = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+   });
+   const today = new Date(localDate);
    const fullDate = getTodayDate(false).split("-").join("");
    const hours =
       today.getHours() < 10 ? `0${today.getHours()}` : today.getHours();
